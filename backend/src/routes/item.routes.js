@@ -6,14 +6,10 @@ const router = express.Router();
 const { createItem, getAllItems } = require("../controllers/item.controller");
 const { checkAuth } = require("../middleware/auth.middleware");
 
-// Rota para CRIAR um novo item
-// Note como o 'checkAuth' é usado como middleware antes de chamar o 'createItem'
-// Isso PROTEGE a rota, só permitindo acesso a usuários logados.
-router.post("/", checkAuth, itemController.createItem);
+// Rota para CRIAR um novo item (PROTEGIDA)
+router.post("/", checkAuth, createItem);
 
-// Rota para LISTAR todos os itens (PÚBLICA, sem middleware)
+// Rota para LISTAR todos os itens (PÚBLICA)
 router.get("/", getAllItems);
-
-// Futuramente, adicionaremos outras rotas aqui (ex: GET para listar itens)
 
 module.exports = router;

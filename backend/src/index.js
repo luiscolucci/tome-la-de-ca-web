@@ -1,25 +1,27 @@
-// Carrega as variáveis de ambiente do arquivo .env
+// backend/src/index.js
+
+// Carrega as variáveis de ambiente do arquivo .env no início de tudo
 require("dotenv").config();
 
 const express = require("express");
-const cors = require("cors"); // Permite que o frontend acesse a API
+const cors = require("cors");
 
-// Importa as rotas de autenticação
+// Importa os arquivos de rotas
 const authRoutes = require("./routes/auth.routes");
 const itemRoutes = require("./routes/item.routes");
 
 const app = express();
 
 // Middlewares essenciais
-app.use(cors()); // Habilita o CORS para todas as origens
-app.use(express.json()); // Habilita o parsing de JSON no corpo das requisições
+app.use(cors());
+app.use(express.json());
 
 // Rota principal para teste
 app.get("/", (req, res) => {
   res.send("API da Plataforma Tome lá, Dê Cá está no ar!");
 });
 
-// Usa as rotas de autenticação com o prefixo /api/auth
+// Conecta as rotas ao servidor com seus prefixos
 app.use("/api/auth", authRoutes);
 app.use("/api/items", itemRoutes);
 

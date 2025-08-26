@@ -2,11 +2,10 @@
 
 const { db } = require("../services/firebase");
 
-// Função para criar um novo item
 const createItem = async (req, res) => {
   try {
     const { title, description, category, type, price } = req.body;
-    const { uid, name } = req.user; // Vem do middleware checkAuth
+    const { uid, name } = req.user;
 
     if (!title || !description || !category || !type) {
       return res.status(400).send({ error: "Campos obrigatórios faltando." });
@@ -36,7 +35,6 @@ const createItem = async (req, res) => {
   }
 };
 
-// Função para listar todos os itens
 const getAllItems = async (req, res) => {
   try {
     const itemsSnapshot = await db
