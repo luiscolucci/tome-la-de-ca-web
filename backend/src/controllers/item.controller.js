@@ -5,7 +5,7 @@ const { db } = require("../services/firebase");
 // Função para CRIAR um novo item (PROTEGIDA)
 const createItem = async (req, res) => {
   try {
-    const { title, description, category, type, price } = req.body;
+    const { title, description, category, type, price, quantity } = req.body;
     const { uid, name } = req.user;
 
     if (!title || !description || !category || !type) {
@@ -18,9 +18,11 @@ const createItem = async (req, res) => {
       category,
       type,
       price: type === "venda" ? price : null,
+      quantity: quantity || 1,
       userId: uid,
       userName: name,
       createdAt: new Date(),
+      status: "disponível",
     };
 
     const itemRef = await db.collection("items").add(newItem);
@@ -116,10 +118,47 @@ const deleteItem = async (req, res) => {
   }
 };
 
+const updateItemStatus = async (req, res) => {
+  try {
+    const { uid } = req.user; // ID do usuário logado
+    const { itemId } = req.params; // ID do item a ser atualizado
+    const { status } = req.body; // O novo status (ex: 'vendido') virá no corpo da requisição
+
+    // Validação
+    if (!status) {
+      return res.status(400).send({ error: "O novo status é obrigatório." });
+    }
+
+    const itemRef = db.collection("items").doc(itemId);
+    const doc = await itemRef.get();
+
+    if (!doc.exists) {
+      return res.status(404).send({ error: "Item não encontrado." });
+    }
+
+    if (doc.data().userId !== uid) {
+      return res
+        .status(403)
+        .send({ error: "Você não tem permissão para alterar este item." });
+    }
+
+    // Atualiza apenas o campo 'status' do item
+    await itemRef.update({ status: status });
+
+    res
+      .status(200)
+      .send({ message: `Status do item atualizado para ${status}.` });
+  } catch (error) {
+    console.error("Erro ao atualizar status do item:", error);
+    res.status(500).send({ error: "Ocorreu um erro no servidor." });
+  }
+};
+
 // Exporta as TRÊS funções
 module.exports = {
   createItem,
   getAllItems,
   getMyItems,
   deleteItem,
+  updateItemStatus,
 };

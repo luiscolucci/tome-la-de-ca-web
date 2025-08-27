@@ -2,11 +2,10 @@
 
 import React, { useState } from "react";
 
-// O componente recebe o token como uma "prop" do App.jsx
-function CreateItem({ token }) {
+function CreateItem({ token, onItemCreated }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  // Adicione outros states para category, type, price se quiser
+  const [quantity, setQuantity] = useState(1);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -15,28 +14,31 @@ function CreateItem({ token }) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          // AQUI ESTÁ A MÁGICA! Enviamos o token no cabeçalho de autorização.
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           title,
           description,
-          category: "Geral", // Vamos simplificar por enquanto
+          quantity: Number(quantity),
+          category: "Geral",
           type: "troca",
         }),
       });
 
-      const data = await response.json();
       if (!response.ok) {
+        const data = await response.json();
         throw new Error(data.error || "Falha ao criar item.");
       }
 
       alert("Item criado com sucesso!");
       setTitle("");
       setDescription("");
+      setQuantity(1);
 
-      // Idealmente, aqui nós também avisaríamos a ItemList para recarregar. Veremos isso depois!
-      window.location.reload(); // Recarrega a página para ver o novo item na lista
+      // A CORREÇÃO: Chamamos a função para atualizar as listas, sem recarregar a página.
+      if (onItemCreated) {
+        onItemCreated();
+      }
     } catch (error) {
       alert(`Erro: ${error.message}`);
     }
@@ -64,6 +66,17 @@ function CreateItem({ token }) {
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
+            required
+          />
+        </div>
+        <div style={{ marginTop: "10px" }}>
+          <label>Quantidade:</label>
+          <br />
+          <input
+            type="number"
+            value={quantity}
+            onChange={(e) => setQuantity(e.target.value)}
+            min="1"
             required
           />
         </div>
