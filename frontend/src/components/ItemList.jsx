@@ -1,6 +1,7 @@
 // frontend/src/components/ItemList.jsx
 
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 
 function ItemList({ refreshKey }) {
   const [items, setItems] = useState([]);
@@ -29,9 +30,14 @@ function ItemList({ refreshKey }) {
                 padding: "10px",
               }}
             >
-              <h3>{item.title}</h3>
+              {/* 2. TRANSFORME O TÍTULO EM UM LINK */}
+              <Link
+                to={`/item/${item.id}`}
+                style={{ textDecoration: "none", color: "inherit" }}
+              >
+                <h3>{item.title}</h3>
+              </Link>
               <p>{item.description}</p>
-              {/* NOVO: Exibindo a quantidade */}
               <small>Quantidade: {item.quantity}</small>
               <br />
               <small>Categoria: {item.category}</small> <br />

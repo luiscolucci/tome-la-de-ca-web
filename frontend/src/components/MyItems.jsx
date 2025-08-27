@@ -1,12 +1,11 @@
 // frontend/src/components/MyItems.jsx
 
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom"; // 1. IMPORTAMOS O COMPONENTE LINK
 
-// Recebe o token e o refreshKey do componente App
 function MyItems({ token, refreshKey }) {
   const [myItems, setMyItems] = useState([]);
 
-  // useEffect busca os itens do usuário quando o componente carrega ou quando o token/refreshKey muda
   useEffect(() => {
     if (!token) return;
 
@@ -18,30 +17,22 @@ function MyItems({ token, refreshKey }) {
       .catch((error) => console.error("Erro ao buscar meus itens:", error));
   }, [token, refreshKey]);
 
-  // --- FUNÇÃO PARA APAGAR UM ITEM (COMPLETA) ---
   const handleDelete = async (itemId) => {
     if (!window.confirm("Tem certeza que deseja apagar este item?")) {
       return;
     }
-
     try {
       const response = await fetch(
         `http://localhost:3001/api/items/${itemId}`,
         {
           method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
-
       if (!response.ok) {
         throw new Error("Falha ao apagar o item.");
       }
-
       alert("Item apagado com sucesso!");
-
-      // Atualiza a lista na tela removendo o item, sem recarregar a página
       setMyItems((currentItems) =>
         currentItems.filter((item) => item.id !== itemId)
       );
@@ -50,7 +41,6 @@ function MyItems({ token, refreshKey }) {
     }
   };
 
-  // --- FUNÇÃO PARA ATUALIZAR O STATUS (COMPLETA) ---
   const handleUpdateStatus = async (itemId, newStatus) => {
     try {
       const response = await fetch(
@@ -64,18 +54,14 @@ function MyItems({ token, refreshKey }) {
           body: JSON.stringify({ status: newStatus }),
         }
       );
-
       if (!response.ok) {
         throw new Error("Falha ao atualizar o status.");
       }
-
-      // Atualiza a lista na tela alterando o status do item, sem recarregar a página
       setMyItems((currentItems) =>
         currentItems.map((item) =>
           item.id === itemId ? { ...item, status: newStatus } : item
         )
       );
-
       alert(`Item marcado como ${newStatus}!`);
     } catch (error) {
       alert(`Erro: ${error.message}`);
@@ -104,7 +90,15 @@ function MyItems({ token, refreshKey }) {
                 }}
               >
                 <div>
-                  <strong>{item.title}</strong> (Qtde: {item.quantity})<br />
+                  {/* 2. O TÍTULO AGORA É UM LINK PARA A PÁGINA DE DETALHES */}
+                  <Link
+                    to={`/item/${item.id}`}
+                    style={{ textDecoration: "none", color: "inherit" }}
+                  >
+                    <strong>{item.title}</strong>
+                  </Link>
+                  <span> (Qtde: {item.quantity})</span>
+                  <br />
                   <span
                     style={{
                       fontSize: "0.9em",
