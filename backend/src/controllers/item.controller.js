@@ -5,7 +5,8 @@ const { db } = require("../services/firebase");
 // Função para CRIAR um novo item (PROTEGIDA)
 const createItem = async (req, res) => {
   try {
-    const { title, description, category, type, price, quantity } = req.body;
+    const { title, description, category, type, price, quantity, imageUrl } =
+      req.body;
     const { uid, name } = req.user;
 
     if (!title || !description || !category || !type) {
@@ -19,6 +20,7 @@ const createItem = async (req, res) => {
       type,
       price: type === "venda" ? price : null,
       quantity: quantity || 1,
+      imageUrl: imageUrl || null,
       userId: uid,
       userName: name,
       createdAt: new Date(),
