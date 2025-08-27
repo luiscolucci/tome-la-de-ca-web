@@ -8,6 +8,7 @@ const {
   createItem,
   getAllItems,
   getMyItems,
+  deleteItem,
 } = require("../controllers/item.controller");
 const { checkAuth } = require("../middleware/auth.middleware");
 
@@ -17,6 +18,10 @@ router.post("/", checkAuth, createItem);
 // Rota para LISTAR os itens do usuário logado (PROTEGIDA)
 // Agora a função getMyItems é reconhecida e a rota funciona
 router.get("/my-items", checkAuth, getMyItems);
+
+// Apagar um item específico (PROTEGIDA)
+// :itemId é um parâmetro dinâmico. O ID do item virá na URL.
+router.delete("/:itemId", checkAuth, deleteItem);
 
 // Rota para LISTAR todos os itens (PÚBLICA)
 router.get("/", getAllItems);

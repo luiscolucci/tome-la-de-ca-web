@@ -84,9 +84,42 @@ const getMyItems = async (req, res) => {
   }
 }; // Fim da função getMyItems
 
+const deleteItem = async (req, res) => {
+  try {
+    // Pega o ID do usuário que está fazendo a requisição (do token)
+    const { uid } = req.user;
+    // Pega o ID do item que deve ser apagado (da URL, ex: /api/items/xyz123)
+    const { itemId } = req.params;
+
+    const itemRef = db.collection("items").doc(itemId);
+    const doc = await itemRef.get();
+
+    // 1. Verifica se o item realmente existe
+    if (!doc.exists) {
+      return res.status(404).send({ error: "Item não encontrado." });
+    }
+
+    // 2. VERIFICAÇÃO DE PERMISSÃO: Compara o ID do dono do item com o ID do usuário logado
+    if (doc.data().userId !== uid) {
+      return res
+        .status(403)
+        .send({ error: "Você não tem permissão para apagar este item." });
+    }
+
+    // 3. Se tudo estiver certo, apaga o item
+    await itemRef.delete();
+
+    res.status(200).send({ message: "Item apagado com sucesso." });
+  } catch (error) {
+    console.error("Erro ao apagar item:", error);
+    res.status(500).send({ error: "Ocorreu um erro no servidor." });
+  }
+};
+
 // Exporta as TRÊS funções
 module.exports = {
   createItem,
   getAllItems,
   getMyItems,
+  deleteItem,
 };
