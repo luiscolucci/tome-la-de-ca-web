@@ -154,6 +154,25 @@ const updateItemStatus = async (req, res) => {
   }
 };
 
+const getItemById = async (req, res) => {
+  try {
+    const { itemId } = req.params; // Pega o ID da URL
+    const itemRef = db.collection("items").doc(itemId);
+    const doc = await itemRef.get();
+
+    // Verifica se o documento com esse ID existe
+    if (!doc.exists) {
+      return res.status(404).send({ error: "Item não encontrado." });
+    }
+
+    // Se existe, retorna os dados do item junto com seu ID
+    res.status(200).send({ id: doc.id, ...doc.data() });
+  } catch (error) {
+    console.error("Erro ao buscar item por ID:", error);
+    res.status(500).send({ error: "Ocorreu um erro no servidor." });
+  }
+};
+
 // Exporta as TRÊS funções
 module.exports = {
   createItem,
@@ -161,4 +180,5 @@ module.exports = {
   getMyItems,
   deleteItem,
   updateItemStatus,
+  getItemById,
 };
