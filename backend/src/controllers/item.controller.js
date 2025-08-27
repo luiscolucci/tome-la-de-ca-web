@@ -2,6 +2,7 @@
 
 const { db } = require("../services/firebase");
 
+// Função para CRIAR um novo item (PROTEGIDA)
 const createItem = async (req, res) => {
   try {
     const { title, description, category, type, price } = req.body;
@@ -33,8 +34,9 @@ const createItem = async (req, res) => {
     console.error("Erro ao criar item:", error);
     res.status(500).send({ error: "Ocorreu um erro no servidor." });
   }
-};
+}; // Fim da função createItem
 
+// Função para LISTAR TODOS os itens (PÚBLICA)
 const getAllItems = async (req, res) => {
   try {
     const itemsSnapshot = await db
@@ -52,12 +54,39 @@ const getAllItems = async (req, res) => {
 
     res.status(200).send(items);
   } catch (error) {
-    console.error("Erro ao listar itens:", error);
+    console.error("Erro ao listar todos os itens:", error);
     res.status(500).send({ error: "Ocorreu um erro no servidor." });
   }
-};
+}; // Fim da função getAllItems
 
+// Função para LISTAR OS ITENS DO USUÁRIO LOGADO (PROTEGIDA)
+const getMyItems = async (req, res) => {
+  try {
+    const { uid } = req.user;
+
+    const itemsSnapshot = await db
+      .collection("items")
+      .where("userId", "==", uid)
+      .get();
+
+    const items = [];
+    itemsSnapshot.forEach((doc) => {
+      items.push({
+        id: doc.id,
+        ...doc.data(),
+      });
+    });
+
+    res.status(200).send(items);
+  } catch (error) {
+    console.error("Erro ao listar meus itens:", error);
+    res.status(500).send({ error: "Ocorreu um erro no servidor." });
+  }
+}; // Fim da função getMyItems
+
+// Exporta as TRÊS funções
 module.exports = {
   createItem,
   getAllItems,
+  getMyItems,
 };
