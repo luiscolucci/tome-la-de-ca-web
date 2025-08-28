@@ -26,6 +26,7 @@ function Header({ user, onLoginClick, onRegisterClick, hasUnreadMessages }) {
         </Typography>
 
         {user ? (
+          // --- VISTA PARA UTILIZADOR LOGADO ---
           <>
             <Typography sx={{ marginRight: 2 }}>
               Olá, {user.displayName || user.email}
@@ -44,12 +45,24 @@ function Header({ user, onLoginClick, onRegisterClick, hasUnreadMessages }) {
             <Button component={Link} to="/my-area" color="inherit">
               Minha Área
             </Button>
+
+            {/* BOTÃO ADICIONADO AQUI */}
+            <Button component={Link} to="/contact" color="inherit">
+              Fale Connosco
+            </Button>
+
             <Button color="inherit" onClick={handleLogout}>
               Sair
             </Button>
           </>
         ) : (
+          // --- VISTA PARA VISITANTES ---
           <>
+            {/* BOTÃO ADICIONADO AQUI TAMBÉM */}
+            <Button component={Link} to="/contact" color="inherit">
+              Fale Connosco
+            </Button>
+
             <Button color="inherit" onClick={onLoginClick}>
               Login
             </Button>
@@ -63,5 +76,4 @@ function Header({ user, onLoginClick, onRegisterClick, hasUnreadMessages }) {
   );
 }
 
-// A LINHA QUE FALTAVA ESTÁ AQUI
 export default Header;

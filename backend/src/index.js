@@ -11,6 +11,7 @@ const authRoutes = require("./routes/auth.routes");
 const itemRoutes = require("./routes/item.routes");
 const conversationRoutes = require("./routes/conversation.routes");
 const userRoutes = require("./routes/user.routes"); // <-- 1. IMPORTE AS NOVAS ROTAS
+const supportRoutes = require("./routes/support.routes"); // <-- 1. IMPORTAR AS NOVAS ROTAS
 
 const app = express();
 
@@ -28,6 +29,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/items", itemRoutes);
 app.use("/api/conversations", conversationRoutes);
 app.use("/api/users", userRoutes); // <-- 2. USE AS NOVAS ROTAS
+app.use("/api/support", supportRoutes); // <-- 2. USAR AS NOVAS ROTAS
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
