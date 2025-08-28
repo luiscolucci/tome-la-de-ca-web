@@ -11,17 +11,20 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "./firebase";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 
-// Importa componentes do Material-UI
+// 1. IMPORTAMOS O THEMEPROVIDER E O CSSBASELINE
+import { ThemeProvider, CssBaseline } from "@mui/material";
+import theme from "./theme"; // Importamos o nosso tema personalizado
+
 import { Modal, Box, CircularProgress } from "@mui/material";
 
-// Importa nosso Header e todas as Páginas
+// Importa o nosso Header e todas as Páginas
 import Header from "./components/Header";
 import HomePage from "./pages/HomePage";
 import ItemDetailPage from "./pages/ItemDetailPage";
 import MyAreaPage from "./pages/MyAreaPage";
 import ChatPage from "./pages/ChatPage";
 import ConversationsPage from "./pages/ConversationsPage";
-import WishlistPage from "./pages/WishlistPage"; // <-- IMPORTE A NOVA PÁGINA
+import WishlistPage from "./pages/WishlistPage";
 
 // Importa os componentes de formulário
 import Login from "./components/Login";
@@ -35,14 +38,13 @@ const modalStyle = {
   transform: "translate(-50%, -50%)",
   width: 400,
   bgcolor: "background.paper",
-  border: "2px solid #000",
+  border: "1px solid #ddd",
+  borderRadius: "8px",
   boxShadow: 24,
   p: 4,
 };
 
-// Componente auxiliar para proteger rotas.
-// Se o usuário estiver logado (tem token), mostra a página.
-// Se não, redireciona para a página inicial.
+// Componente auxiliar para proteger rotas
 const PrivateRoute = ({ token, children }) => {
   return token ? children : <Navigate to="/" />;
 };
@@ -61,7 +63,7 @@ function App() {
   const handleOpenRegister = () => setOpenRegisterModal(true);
   const handleCloseRegister = () => setOpenRegisterModal(false);
 
-  // Efeito para verificar a sessão do usuário ao carregar a página
+  // Efeito para verificar a sessão do utilizador ao carregar a página
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
@@ -74,7 +76,7 @@ function App() {
       }
       setAuthLoading(false);
     });
-    // Limpa o "ouvinte" quando o componente é desmontado para evitar vazamentos de memória
+    // Limpa o "ouvinte" quando o componente é desmontado para evitar fugas de memória
     return () => unsubscribe();
   }, []);
 
@@ -82,7 +84,7 @@ function App() {
   useEffect(() => {
     if (!user) {
       setHasUnreadMessages(false);
-      return; // Se não há usuário, desliga o ouvinte
+      return; // Se não há utilizador, desliga o ouvinte
     }
 
     const conversationsRef = collection(db, "conversations");
@@ -111,10 +113,9 @@ function App() {
   // Função para limpar a notificação global ao entrar na página de conversas
   const clearGlobalNotification = () => {
     setHasUnreadMessages(false);
-    // No futuro, podemos adicionar lógica aqui para marcar todas as conversas como lidas no DB.
   };
 
-  // Exibe "Carregando..." enquanto o estado de autenticação é verificado
+  // Exibe "A carregar..." enquanto o estado de autenticação é verificado
   if (authLoading) {
     return (
       <Box
@@ -131,68 +132,71 @@ function App() {
   }
 
   return (
-    <Router>
-      <Header
-        user={user}
-        onLoginClick={handleOpenLogin}
-        onRegisterClick={handleOpenRegister}
-        hasUnreadMessages={hasUnreadMessages}
-      />
-
-      <main>
-        <Routes>
-          <Route path="/" element={<HomePage token={token} />} />
-          <Route path="/item/:itemId" element={<ItemDetailPage />} />
-          <Route
-            path="/my-area"
-            element={
-              <PrivateRoute token={token}>
-                <MyAreaPage token={token} />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/chat/:conversationId"
-            element={
-              <PrivateRoute token={token}>
-                <ChatPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/conversations"
-            element={
-              <PrivateRoute token={token}>
-                <ConversationsPage
-                  token={token}
-                  onEnterPage={clearGlobalNotification}
-                />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/wishlist"
-            element={
-              <PrivateRoute token={token}>
-                <WishlistPage token={token} />
-              </PrivateRoute>
-            }
-          />
-        </Routes>
-      </main>
-
-      <Modal open={openLoginModal} onClose={handleCloseLogin}>
-        <Box sx={modalStyle}>
-          <Login onLoginSuccess={handleCloseLogin} />
-        </Box>
-      </Modal>
-
-      <Modal open={openRegisterModal} onClose={handleCloseRegister}>
-        <Box sx={modalStyle}>
-          <Register onRegisterSuccess={handleCloseRegister} />
-        </Box>
-      </Modal>
-    </Router>
+    // 2. ENVOLVEMOS TODA A APLICAÇÃO NO THEMEPROVIDER
+    <ThemeProvider theme={theme}>
+      {/* CssBaseline aplica um reset de CSS moderno e a cor de fundo do nosso tema */}
+      <CssBaseline />
+      <Router>
+        <Header
+          user={user}
+          onLoginClick={handleOpenLogin}
+          onRegisterClick={handleOpenRegister}
+          hasUnreadMessages={hasUnreadMessages}
+        />
+        <main>
+          <Routes>
+            <Route path="/" element={<HomePage token={token} />} />
+            <Route path="/item/:itemId" element={<ItemDetailPage />} />
+            <Route
+              path="/my-area"
+              element={
+                <PrivateRoute token={token}>
+                  <MyAreaPage token={token} />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/chat/:conversationId"
+              element={
+                <PrivateRoute token={token}>
+                  <ChatPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/conversations"
+              element={
+                <PrivateRoute token={token}>
+                  <ConversationsPage
+                    token={token}
+                    onEnterPage={clearGlobalNotification}
+                  />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/wishlist"
+              element={
+                <PrivateRoute token={token}>
+                  <WishlistPage token={token} />
+                </PrivateRoute>
+              }
+            />
+          </Routes>
+        </main>
+        {/* Modais de Login e Registo */}
+        <Modal open={openLoginModal} onClose={handleCloseLogin}>
+          <Box sx={modalStyle}>
+            <Login onLoginSuccess={handleCloseLogin} />
+          </Box>
+        </Modal>
+        <Modal open={openRegisterModal} onClose={handleCloseRegister}>
+          <Box sx={modalStyle}>
+            <Register onRegisterSuccess={handleCloseRegister} />
+          </Box>
+        </Modal>
+      </Router>
+    </ThemeProvider>
   );
 }
 
