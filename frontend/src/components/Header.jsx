@@ -10,26 +10,31 @@ function Header({ user, onLoginClick, onRegisterClick }) {
   const handleLogout = () => {
     signOut(auth).then(() => {
       alert("Você saiu com sucesso!");
+      // O ideal é redirecionar para a home após o logout
+      window.location.href = "/";
     });
   };
 
   return (
     <AppBar position="static">
       <Toolbar>
-        {/* Título do site, que é um link para a home */}
         <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
           <Link to="/" style={{ textDecoration: "none", color: "inherit" }}>
             Tome lá, Dê cá
           </Link>
         </Typography>
 
-        {/* Lógica: Se o usuário existe (está logado), mostra o email e o botão de Sair.
-            Se não, mostra os botões de Login e Cadastro. */}
         {user ? (
           <>
             <Typography sx={{ marginRight: 2 }}>
               Olá, {user.displayName || user.email}
             </Typography>
+
+            {/* NOVO BOTÃO QUE LEVA PARA A /my-area */}
+            <Button component={Link} to="/my-area" color="inherit">
+              Minha Área
+            </Button>
+
             <Button color="inherit" onClick={handleLogout}>
               Sair
             </Button>
