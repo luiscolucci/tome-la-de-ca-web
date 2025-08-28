@@ -1,6 +1,7 @@
 // frontend/src/pages/HomePage.jsx
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
+import { Grid, Box } from "@mui/material";
 import ItemList from "../components/ItemList";
 import CreateItem from "../components/CreateItem";
 import MyItems from "../components/MyItems";
@@ -13,19 +14,23 @@ function HomePage({ token }) {
   };
 
   return (
-    <>
-      {/* Se o usuário está logado (tem token), mostra os componentes de criar e ver "meus itens" */}
+    <Box sx={{ padding: { xs: 1, sm: 2, md: 3 } }}>
       {token && (
         <>
-          <CreateItem token={token} onItemCreated={triggerRefresh} />
-          <MyItems token={token} refreshKey={refreshKey} />
+          <Grid container spacing={4}>
+            <Grid item xs={12} md={5}>
+              <CreateItem token={token} onItemCreated={triggerRefresh} />
+            </Grid>
+            <Grid item xs={12} md={7}>
+              {/* Garanta que o token está sendo passado aqui */}
+              <MyItems token={token} refreshKey={refreshKey} />
+            </Grid>
+          </Grid>
           <hr style={{ margin: "40px 0" }} />
         </>
       )}
-
-      {/* A lista pública é sempre exibida */}
       <ItemList refreshKey={refreshKey} />
-    </>
+    </Box>
   );
 }
 

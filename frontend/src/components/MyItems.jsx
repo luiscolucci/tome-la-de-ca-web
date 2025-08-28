@@ -8,14 +8,18 @@ function MyItems({ token, refreshKey }) {
 
   useEffect(() => {
     if (!token) return;
+
     fetch("http://localhost:3001/api/items/my-items", {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     })
       .then((response) => response.json())
       .then((data) => setMyItems(data))
       .catch((error) => console.error("Erro ao buscar meus itens:", error));
   }, [token, refreshKey]);
 
+  // --- FUNÇÃO DE APAGAR (COMPLETA) ---
   const handleDelete = async (itemId) => {
     if (!window.confirm("Tem certeza que deseja apagar este item?")) {
       return;
@@ -25,7 +29,9 @@ function MyItems({ token, refreshKey }) {
         `http://localhost:3001/api/items/${itemId}`,
         {
           method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
       );
       if (!response.ok) {
@@ -40,6 +46,7 @@ function MyItems({ token, refreshKey }) {
     }
   };
 
+  // --- FUNÇÃO DE ATUALIZAR STATUS (COMPLETA) ---
   const handleUpdateStatus = async (itemId, newStatus) => {
     try {
       const response = await fetch(
@@ -60,9 +67,6 @@ function MyItems({ token, refreshKey }) {
         throw new Error(data.error || "Falha ao atualizar o status.");
       }
 
-      // A CORREÇÃO ESTÁ AQUI:
-      // Nós mesclamos o item antigo (...item) com os novos dados (...data.item)
-      // Isso garante que o 'id' e todas as outras propriedades sejam preservadas.
       setMyItems((currentItems) =>
         currentItems.map((item) =>
           item.id === itemId ? { ...item, ...data.item } : item
@@ -96,25 +100,50 @@ function MyItems({ token, refreshKey }) {
                   alignItems: "center",
                 }}
               >
-                <div>
-                  <Link
-                    to={`/item/${item.id}`}
-                    style={{ textDecoration: "none", color: "inherit" }}
-                  >
-                    <strong>{item.title}</strong>
-                  </Link>
-                  <span> (Qtde: {item.quantity})</span>
-                  <br />
-                  <span
-                    style={{
-                      fontSize: "0.9em",
-                      color: item.status === "disponível" ? "green" : "red",
-                    }}
-                  >
-                    Status: {item.status}
-                  </span>
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "15px" }}
+                >
+                  {item.imageUrls && item.imageUrls.length > 0 && (
+                    <img
+                      src={item.imageUrls[0]}
+                      alt={item.title}
+                      style={{
+                        width: "80px",
+                        height: "80px",
+                        objectFit: "cover",
+                        borderRadius: "4px",
+                      }}
+                    />
+                  )}
+                  <div style={{ flexGrow: 1 }}>
+                    <Link
+                      to={`/item/${item.id}`}
+                      style={{ textDecoration: "none", color: "inherit" }}
+                    >
+                      <strong>{item.title}</strong>
+                    </Link>
+                    <span> (Qtde: {item.quantity})</span>
+                    <br />
+
+                    {item.type === "venda" && (
+                      <span style={{ fontWeight: "bold", color: "#1976d2" }}>
+                        R$ {Number(item.price).toFixed(2).replace(".", ",")}
+                      </span>
+                    )}
+
+                    <br />
+                    <span
+                      style={{
+                        fontSize: "0.9em",
+                        color: item.status === "disponível" ? "green" : "red",
+                      }}
+                    >
+                      Status: {item.status}
+                    </span>
+                  </div>
                 </div>
-                <div>
+                {/* --- BOTÕES DE AÇÃO (COMPLETOS) --- */}
+                <div style={{ display: "flex", gap: "10px", flexShrink: 0 }}>
                   {item.status === "disponível" ? (
                     <button
                       onClick={() => handleUpdateStatus(item.id, "vendido")}
@@ -130,11 +159,7 @@ function MyItems({ token, refreshKey }) {
                   )}
                   <button
                     onClick={() => handleDelete(item.id)}
-                    style={{
-                      backgroundColor: "#c0392b",
-                      color: "white",
-                      marginLeft: "10px",
-                    }}
+                    style={{ backgroundColor: "#c0392b", color: "white" }}
                   >
                     Apagar
                   </button>
