@@ -18,6 +18,7 @@ import Header from "./components/Header";
 import HomePage from "./pages/HomePage";
 import ItemDetailPage from "./pages/ItemDetailPage";
 import MyAreaPage from "./pages/MyAreaPage";
+import ChatPage from "./pages/ChatPage";
 import Login from "./components/Login";
 import Register from "./components/Register";
 
@@ -99,6 +100,14 @@ function App() {
             element={
               <PrivateRoute token={token}>
                 <MyAreaPage token={token} />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/chat/:conversationId"
+            element={
+              <PrivateRoute token={token}>
+                <ChatPage />
               </PrivateRoute>
             }
           />

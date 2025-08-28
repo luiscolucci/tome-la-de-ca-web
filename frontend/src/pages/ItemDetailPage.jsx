@@ -1,32 +1,37 @@
 // frontend/src/pages/ItemDetailPage.jsx
 
 import React, { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
-import { Box, Typography, CircularProgress, Button } from "@mui/material"; // Importamos o Button
-import { onAuthStateChanged } from "firebase/auth"; // Importamos para verificar o usuário logado
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { Box, Typography, CircularProgress, Button } from "@mui/material";
+import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../firebase";
 
 function ItemDetailPage() {
   const { itemId } = useParams();
+  const navigate = useNavigate();
+
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [currentUser, setCurrentUser] = useState(null); // Estado para guardar o usuário logado
+  const [currentUser, setCurrentUser] = useState(null);
 
   // Efeito para verificar quem é o usuário logado
   useEffect(() => {
-    onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
     });
+    return () => unsubscribe(); // Limpa o "ouvinte" ao desmontar
   }, []);
 
-  // Efeito para buscar os dados do item
+  // Efeito para buscar os dados do item do backend
   useEffect(() => {
     const fetchUrl = `http://localhost:3001/api/items/${itemId}`;
 
     fetch(fetchUrl)
       .then((response) => {
-        if (!response.ok) throw new Error("Item não encontrado");
+        if (!response.ok) {
+          throw new Error("Item não encontrado ou falha na rede");
+        }
         return response.json();
       })
       .then((data) => {
@@ -37,27 +42,65 @@ function ItemDetailPage() {
         setError(error.message);
         setLoading(false);
       });
-  }, [itemId]);
+  }, [itemId]); // Roda o efeito sempre que o itemId na URL mudar
 
-  // LINHA DE INVESTIGAÇÃO: Vamos ver os dados que o componente recebe
-  console.log("Dados do item na página de detalhes:", item);
+  // Variável que checa se o usuário logado é o dono do item
+  const isOwner = currentUser && item && currentUser.uid === item.userId;
 
+  // Função para o botão "Tenho Interesse"
+  const handleInterestClick = async () => {
+    if (!currentUser) {
+      alert("Você precisa estar logado para iniciar uma conversa.");
+      return;
+    }
+
+    try {
+      const token = await currentUser.getIdToken();
+
+      const response = await fetch("http://localhost:3001/api/conversations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ itemId: itemId }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Não foi possível iniciar a conversa.");
+      }
+
+      const { conversationId } = data;
+      // Redireciona o usuário para a página de chat com o ID da conversa
+      navigate(`/chat/${conversationId}`);
+    } catch (error) {
+      alert(`Erro: ${error.message}`);
+    }
+  };
+
+  // Renderiza estados de carregamento e erro
   if (loading)
     return (
       <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
         <CircularProgress />
       </Box>
     );
-  if (error) return <Typography color="error">Erro: {error}</Typography>;
-  if (!item) return <Typography>Item não encontrado.</Typography>;
+  if (error)
+    return (
+      <Typography color="error" sx={{ textAlign: "center", mt: 4 }}>
+        Erro: {error}
+      </Typography>
+    );
+  if (!item)
+    return (
+      <Typography sx={{ textAlign: "center", mt: 4 }}>
+        Item não encontrado.
+      </Typography>
+    );
 
-  // Variável para verificar se o usuário logado é o dono do item
-  const isOwner = currentUser && currentUser.uid === item.userId;
-
-  const handleInterestClick = () => {
-    alert("Funcionalidade de chat ou carrinho será implementada em breve!");
-  };
-
+  // Renderiza a página com os detalhes do item
   return (
     <Box sx={{ padding: { xs: 2, md: 3 } }}>
       <Typography variant="h3" component="h1" gutterBottom>
@@ -94,15 +137,14 @@ function ItemDetailPage() {
         )}
       </Box>
 
-      {/* BOTÃO "TENHO INTERESSE" */}
-      {/* Condições: O usuário precisa estar logado E não pode ser o dono do item */}
+      {/* Botão "Tenho Interesse", que só aparece se o usuário estiver logado e NÃO for o dono do item */}
       {currentUser && !isOwner && (
         <Button
           variant="contained"
           onClick={handleInterestClick}
           sx={{ mb: 3 }}
         >
-          Tenho Interesse
+          Tenho Interesse / Entrar em Contato
         </Button>
       )}
 
