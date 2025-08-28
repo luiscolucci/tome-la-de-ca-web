@@ -1,29 +1,12 @@
 // frontend/src/pages/HomePage.jsx
 
-import React, { useState } from "react";
-import { signOut } from "firebase/auth";
-import { auth } from "../firebase";
-
+import React, { useState, useEffect } from "react";
 import ItemList from "../components/ItemList";
-import Register from "../components/Register";
-import Login from "../components/Login";
 import CreateItem from "../components/CreateItem";
 import MyItems from "../components/MyItems";
 
-function HomePage() {
-  const [token, setToken] = useState(null);
+function HomePage({ token }) {
   const [refreshKey, setRefreshKey] = useState(0);
-
-  const handleLoginSuccess = (newToken) => {
-    setToken(newToken);
-  };
-
-  const handleLogout = () => {
-    signOut(auth).then(() => {
-      setToken(null);
-      alert("Você saiu com sucesso!");
-    });
-  };
 
   const triggerRefresh = () => {
     setRefreshKey((oldKey) => oldKey + 1);
@@ -31,24 +14,16 @@ function HomePage() {
 
   return (
     <>
-      {" "}
-      {/* Usamos um Fragment <>...</> para não adicionar uma div extra */}
-      {!token ? (
-        <div style={{ display: "flex", gap: "20px" }}>
-          <Register />
-          <Login onLoginSuccess={handleLoginSuccess} />
-        </div>
-      ) : (
-        <div>
-          <p>Você está logado!</p>
-          <button onClick={handleLogout} style={{ marginBottom: "20px" }}>
-            Sair (Logout)
-          </button>
+      {/* Se o usuário está logado (tem token), mostra os componentes de criar e ver "meus itens" */}
+      {token && (
+        <>
           <CreateItem token={token} onItemCreated={triggerRefresh} />
           <MyItems token={token} refreshKey={refreshKey} />
-        </div>
+          <hr style={{ margin: "40px 0" }} />
+        </>
       )}
-      <hr style={{ margin: "40px 0" }} />
+
+      {/* A lista pública é sempre exibida */}
       <ItemList refreshKey={refreshKey} />
     </>
   );

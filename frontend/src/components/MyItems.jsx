@@ -1,14 +1,13 @@
 // frontend/src/components/MyItems.jsx
 
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom"; // 1. IMPORTAMOS O COMPONENTE LINK
+import { Link } from "react-router-dom";
 
 function MyItems({ token, refreshKey }) {
   const [myItems, setMyItems] = useState([]);
 
   useEffect(() => {
     if (!token) return;
-
     fetch("http://localhost:3001/api/items/my-items", {
       headers: { Authorization: `Bearer ${token}` },
     })
@@ -54,15 +53,23 @@ function MyItems({ token, refreshKey }) {
           body: JSON.stringify({ status: newStatus }),
         }
       );
+
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error("Falha ao atualizar o status.");
+        throw new Error(data.error || "Falha ao atualizar o status.");
       }
+
+      // A CORREÇÃO ESTÁ AQUI:
+      // Nós mesclamos o item antigo (...item) com os novos dados (...data.item)
+      // Isso garante que o 'id' e todas as outras propriedades sejam preservadas.
       setMyItems((currentItems) =>
         currentItems.map((item) =>
-          item.id === itemId ? { ...item, status: newStatus } : item
+          item.id === itemId ? { ...item, ...data.item } : item
         )
       );
-      alert(`Item marcado como ${newStatus}!`);
+
+      alert(data.message);
     } catch (error) {
       alert(`Erro: ${error.message}`);
     }
@@ -90,7 +97,6 @@ function MyItems({ token, refreshKey }) {
                 }}
               >
                 <div>
-                  {/* 2. O TÍTULO AGORA É UM LINK PARA A PÁGINA DE DETALHES */}
                   <Link
                     to={`/item/${item.id}`}
                     style={{ textDecoration: "none", color: "inherit" }}
