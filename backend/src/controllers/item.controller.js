@@ -3,45 +3,51 @@
 const { db } = require("../services/firebase");
 const { FieldValue } = require("firebase-admin/firestore");
 
-// --- FUNÇÃO ALTERADA ---
+// --- FUNÇÃO PRINCIPALMENTE ALTERADA ---
 const getAllItems = async (req, res) => {
   try {
-    // 1. Capturamos os parâmetros de pesquisa da URL (ex: /api/items?search=skate&category=Roupas)
-    const { search, category } = req.query;
+    const { search, category, page = 1 } = req.query;
+    const ITEMS_PER_PAGE = 9; // Mostraremos 9 itens por página
 
-    let query = db.collection("items").where("status", "==", "disponível");
-
-    // 2. Adicionamos o filtro de categoria à nossa consulta, se ele existir
+    // 1. Constrói a consulta base com os filtros
+    let baseQuery = db.collection("items").where("status", "==", "disponível");
     if (category && category !== "Todos") {
-      query = query.where("category", "==", category);
+      baseQuery = baseQuery.where("category", "==", category);
     }
 
-    // A pesquisa por texto no Firestore é complexa. Uma abordagem simples é filtrar no servidor.
-    // Para aplicações maiores, usaríamos um serviço de pesquisa dedicado como Algolia ou Elasticsearch.
+    // 2. Faz uma primeira consulta para contar o total de itens que correspondem aos filtros
+    // (Isto é necessário para o frontend saber quantas páginas existem no total)
+    const countSnapshot = await baseQuery.get();
+    let totalItems = countSnapshot.size;
 
-    // Ordenamos sempre pelos mais recentes
-    query = query.orderBy("createdAt", "desc");
-
-    const itemsSnapshot = await query.get();
-
-    let items = [];
-    itemsSnapshot.forEach((doc) => {
-      items.push({
-        id: doc.id,
-        ...doc.data(),
-      });
+    // Filtro de pesquisa por texto (feito no servidor após a busca inicial)
+    let filteredItems = [];
+    countSnapshot.forEach((doc) => {
+      filteredItems.push({ id: doc.id, ...doc.data() });
     });
 
-    // 3. Se houver um termo de pesquisa, filtramos os resultados DEPOIS de os receber do Firestore.
     if (search) {
-      items = items.filter(
+      filteredItems = filteredItems.filter(
         (item) =>
           item.title.toLowerCase().includes(search.toLowerCase()) ||
           item.description.toLowerCase().includes(search.toLowerCase())
       );
+      totalItems = filteredItems.length;
     }
 
-    res.status(200).send(items);
+    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+
+    // 3. Pega a fatia (slice) de itens correspondente à página atual
+    const startIndex = (page - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    const itemsForPage = filteredItems.slice(startIndex, endIndex);
+
+    // 4. Retorna os itens da página e as informações de paginação
+    res.status(200).send({
+      items: itemsForPage,
+      totalPages: totalPages,
+      currentPage: Number(page),
+    });
   } catch (error) {
     console.error("Erro ao listar todos os itens:", error);
     res.status(500).send({ error: "Ocorreu um erro no servidor." });

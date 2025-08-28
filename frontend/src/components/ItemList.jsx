@@ -10,16 +10,18 @@ import {
   Box,
   CardMedia,
   CircularProgress,
+  Pagination,
 } from "@mui/material";
 
-// 1. O componente agora recebe os props para pesquisa e filtro
-function ItemList({ refreshKey, searchTerm, selectedCategory }) {
+// 1. O componente agora recebe 'page' e 'setPage'
+function ItemList({ refreshKey, searchTerm, selectedCategory, page, setPage }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  // 2. Novo estado para guardar o número total de páginas
+  const [totalPages, setTotalPages] = useState(0);
 
   useEffect(() => {
     setLoading(true);
-    // 2. Constrói a URL dinamicamente com os parâmetros de pesquisa
     const params = new URLSearchParams();
     if (searchTerm) {
       params.append("search", searchTerm);
@@ -27,6 +29,8 @@ function ItemList({ refreshKey, searchTerm, selectedCategory }) {
     if (selectedCategory && selectedCategory !== "Todos") {
       params.append("category", selectedCategory);
     }
+    // 3. Adiciona o parâmetro da página à URL
+    params.append("page", page);
 
     const queryString = params.toString();
     const fetchUrl = `http://localhost:3001/api/items?${queryString}`;
@@ -34,15 +38,22 @@ function ItemList({ refreshKey, searchTerm, selectedCategory }) {
     fetch(fetchUrl)
       .then((response) => response.json())
       .then((data) => {
-        setItems(data);
+        // 4. O backend agora retorna um objeto, então guardamos as partes corretas
+        setItems(data.items);
+        setTotalPages(data.totalPages);
         setLoading(false);
       })
       .catch((error) => {
         console.error("Erro ao buscar itens:", error);
         setLoading(false);
       });
-    // 3. O useEffect agora depende também dos termos de pesquisa para se atualizar automaticamente
-  }, [refreshKey, searchTerm, selectedCategory]);
+    // 5. O useEffect agora também depende da 'page' para se atualizar
+  }, [refreshKey, searchTerm, selectedCategory, page]);
+
+  // 6. Função para lidar com a mudança de página
+  const handlePageChange = (event, value) => {
+    setPage(value);
+  };
 
   if (loading) {
     return (
@@ -113,6 +124,18 @@ function ItemList({ refreshKey, searchTerm, selectedCategory }) {
           ))
         )}
       </Grid>
+
+      {/* 7. ADICIONAR O COMPONENTE DE PAGINAÇÃO */}
+      {totalPages > 1 && (
+        <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+          <Pagination
+            count={totalPages}
+            page={page}
+            onChange={handlePageChange}
+            color="primary"
+          />
+        </Box>
+      )}
     </Box>
   );
 }

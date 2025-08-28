@@ -4,36 +4,46 @@ import React, { useState } from "react";
 import { Container } from "@mui/material";
 
 import ItemList from "../components/ItemList";
-import SearchAndFilter from "../components/SearchAndFilter"; // Importar o novo componente
+import SearchAndFilter from "../components/SearchAndFilter";
 
 function HomePage() {
-  // Estado para a atualização da lista (continua o mesmo)
   const [refreshKey, setRefreshKey] = useState(0);
-
-  // Novos estados para controlar os valores da pesquisa e do filtro
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Todos");
+  // 1. NOVO ESTADO PARA CONTROLAR A PÁGINA ATUAL
+  const [page, setPage] = useState(1);
 
-  // Função para forçar a atualização da lista (pode ser usada no futuro)
   const triggerRefresh = () => {
     setRefreshKey((oldKey) => oldKey + 1);
   };
 
+  // Função para garantir que a pesquisa volta para a primeira página
+  const handleSearchChange = (newSearchTerm) => {
+    setSearchTerm(newSearchTerm);
+    setPage(1); // Volta para a página 1 ao pesquisar
+  };
+
+  const handleCategoryChange = (newCategory) => {
+    setSelectedCategory(newCategory);
+    setPage(1); // Volta para a página 1 ao filtrar
+  };
+
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      {/* Adicionamos o componente de pesquisa e filtro */}
       <SearchAndFilter
         searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
+        setSearchTerm={handleSearchChange}
         selectedCategory={selectedCategory}
-        setSelectedCategory={setSelectedCategory}
+        setSelectedCategory={handleCategoryChange}
       />
 
-      {/* Passamos os valores dos filtros para a ItemList */}
+      {/* 2. PASSAMOS O ESTADO DA PÁGINA E A FUNÇÃO PARA O ATUALIZAR PARA A ItemList */}
       <ItemList
         refreshKey={refreshKey}
         searchTerm={searchTerm}
         selectedCategory={selectedCategory}
+        page={page}
+        setPage={setPage}
       />
     </Container>
   );
