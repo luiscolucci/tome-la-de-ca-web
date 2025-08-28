@@ -10,6 +10,8 @@ import {
   onSnapshot,
   addDoc,
   serverTimestamp,
+  doc,
+  updateDoc,
 } from "firebase/firestore";
 import {
   Box,
@@ -25,9 +27,9 @@ function ChatPage() {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
-  const messagesEndRef = useRef(null); // Referência para o final da lista de mensagens
+  const messagesEndRef = useRef(null);
 
-  // Efeito para rolar a tela para a última mensagem sempre que a lista de mensagens mudar
+  // Efeito para rolar a tela para a última mensagem
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -39,7 +41,6 @@ function ChatPage() {
       return;
     }
 
-    // Define a consulta para a sub-coleção 'messages' dentro da conversa específica
     const messagesRef = collection(
       db,
       "conversations",
@@ -48,15 +49,9 @@ function ChatPage() {
     );
     const q = query(messagesRef, orderBy("createdAt"));
 
-    // onSnapshot cria o "ouvinte" em tempo real
     const unsubscribe = onSnapshot(
       q,
       (querySnapshot) => {
-        // Linha de debug para sabermos quando o Firebase envia dados
-        console.log(
-          `Listener do Firestore disparado! Encontradas ${querySnapshot.size} mensagens.`
-        );
-
         const msgs = [];
         querySnapshot.forEach((doc) => {
           msgs.push({ id: doc.id, ...doc.data() });
@@ -70,19 +65,17 @@ function ChatPage() {
       }
     );
 
-    // Limpa o "ouvinte" quando o componente é desmontado para evitar vazamentos de memória
     return () => unsubscribe();
   }, [conversationId]);
 
   // Função para enviar uma nova mensagem
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    console.log("Tentando enviar mensagem:", newMessage); // Debug
     if (newMessage.trim() === "" || !auth.currentUser) {
-      console.log("Envio cancelado: mensagem vazia ou usuário não logado."); // Debug
       return;
     }
 
+    const currentUser = auth.currentUser;
     const messagesRef = collection(
       db,
       "conversations",
@@ -91,17 +84,25 @@ function ChatPage() {
     );
 
     try {
+      // Adiciona a nova mensagem à sub-coleção 'messages'
       await addDoc(messagesRef, {
         text: newMessage,
-        senderId: auth.currentUser.uid,
-        createdAt: serverTimestamp(), // Usa o timestamp do servidor para garantir a ordem
+        senderId: currentUser.uid,
+        createdAt: serverTimestamp(),
       });
 
-      console.log("Mensagem enviada com sucesso para o Firestore!"); // Debug
+      // Atualiza o documento 'conversation' principal
+      const conversationRef = doc(db, "conversations", conversationId);
+      await updateDoc(conversationRef, {
+        lastMessage: newMessage,
+        updatedAt: serverTimestamp(),
+        lastSenderId: currentUser.uid,
+      });
+
       setNewMessage(""); // Limpa o campo de input
     } catch (error) {
-      console.error("ERRO ao tentar enviar a mensagem:", error); // Debug
-      alert("Ocorreu um erro ao enviar a mensagem. Verifique o console.");
+      console.error("ERRO ao tentar enviar a mensagem:", error);
+      alert("Ocorreu um erro ao enviar a mensagem.");
     }
   };
 
@@ -138,7 +139,6 @@ function ChatPage() {
         }}
       >
         {messages.map((msg) => {
-          // Verifica se a mensagem foi enviada pelo usuário logado no momento
           const isSender = msg.senderId === auth.currentUser?.uid;
           return (
             <Box
@@ -164,11 +164,9 @@ function ChatPage() {
             </Box>
           );
         })}
-        {/* Elemento invisível no final da lista para o scroll automático */}
         <div ref={messagesEndRef} />
       </Box>
 
-      {/* Formulário de Envio */}
       <Box
         component="form"
         onSubmit={handleSendMessage}

@@ -1,17 +1,18 @@
 // frontend/src/components/Header.jsx
 
 import React from "react";
-import { AppBar, Toolbar, Typography, Button, Box } from "@mui/material";
-import { Link } from "react-router-dom";
+import { AppBar, Toolbar, Typography, Button, Badge } from "@mui/material";
+import { Link, useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
 
-function Header({ user, onLoginClick, onRegisterClick }) {
+function Header({ user, onLoginClick, onRegisterClick, hasUnreadMessages }) {
+  const navigate = useNavigate();
+
   const handleLogout = () => {
     signOut(auth).then(() => {
       alert("Você saiu com sucesso!");
-      // O ideal é redirecionar para a home após o logout
-      window.location.href = "/";
+      navigate("/"); // Usa o navigate para redirecionar
     });
   };
 
@@ -30,15 +31,15 @@ function Header({ user, onLoginClick, onRegisterClick }) {
               Olá, {user.displayName || user.email}
             </Typography>
 
-            {/* BOTÃO ADICIONADO PARA A CAIXA DE ENTRADA */}
             <Button component={Link} to="/conversations" color="inherit">
-              Conversas
+              <Badge color="error" variant="dot" invisible={!hasUnreadMessages}>
+                Conversas
+              </Badge>
             </Button>
 
             <Button component={Link} to="/my-area" color="inherit">
               Minha Área
             </Button>
-
             <Button color="inherit" onClick={handleLogout}>
               Sair
             </Button>

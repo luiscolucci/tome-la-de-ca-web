@@ -8,18 +8,21 @@ import {
   Navigate,
 } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "./firebase";
+import { auth, db } from "./firebase";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 
-// Importa componentes do Material-UI para o Modal
-import { Modal, Box } from "@mui/material";
+// Importa componentes do Material-UI
+import { Modal, Box, CircularProgress } from "@mui/material";
 
-// Importa nosso Header, Páginas e Componentes de formulário
+// Importa nosso Header e todas as Páginas
 import Header from "./components/Header";
 import HomePage from "./pages/HomePage";
 import ItemDetailPage from "./pages/ItemDetailPage";
 import MyAreaPage from "./pages/MyAreaPage";
 import ChatPage from "./pages/ChatPage";
 import ConversationsPage from "./pages/ConversationsPage";
+
+// Importa os componentes de formulário
 import Login from "./components/Login";
 import Register from "./components/Register";
 
@@ -36,24 +39,28 @@ const modalStyle = {
   p: 4,
 };
 
-// Componente auxiliar para proteger rotas
+// Componente auxiliar para proteger rotas.
+// Se o usuário estiver logado (tem token), mostra a página.
+// Se não, redireciona para a página inicial.
 const PrivateRoute = ({ token, children }) => {
   return token ? children : <Navigate to="/" />;
 };
 
 function App() {
   const [token, setToken] = useState(null);
-  const [authLoading, setAuthLoading] = useState(true);
   const [user, setUser] = useState(null);
-
+  const [authLoading, setAuthLoading] = useState(true);
   const [openLoginModal, setOpenLoginModal] = useState(false);
   const [openRegisterModal, setOpenRegisterModal] = useState(false);
+  const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
 
+  // Funções para abrir e fechar os modais
   const handleOpenLogin = () => setOpenLoginModal(true);
   const handleCloseLogin = () => setOpenLoginModal(false);
   const handleOpenRegister = () => setOpenRegisterModal(true);
   const handleCloseRegister = () => setOpenRegisterModal(false);
 
+  // Efeito para verificar a sessão do usuário ao carregar a página
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
@@ -66,11 +73,60 @@ function App() {
       }
       setAuthLoading(false);
     });
+    // Limpa o "ouvinte" quando o componente é desmontado para evitar vazamentos de memória
     return () => unsubscribe();
   }, []);
 
+  // Efeito "ouvinte global" para notificações de novas mensagens
+  useEffect(() => {
+    if (!user) {
+      setHasUnreadMessages(false);
+      return; // Se não há usuário, desliga o ouvinte
+    }
+
+    const conversationsRef = collection(db, "conversations");
+    const q = query(
+      conversationsRef,
+      where("participantIds", "array-contains", user.uid)
+    );
+
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      let unreadFound = false;
+      querySnapshot.forEach((doc) => {
+        const conversation = doc.data();
+        if (
+          conversation.lastSenderId &&
+          conversation.lastSenderId !== user.uid
+        ) {
+          unreadFound = true;
+        }
+      });
+      setHasUnreadMessages(unreadFound);
+    });
+
+    return () => unsubscribe(); // Limpa o ouvinte ao deslogar
+  }, [user]); // Roda sempre que o objeto 'user' mudar
+
+  // Função para limpar a notificação global ao entrar na página de conversas
+  const clearGlobalNotification = () => {
+    setHasUnreadMessages(false);
+    // No futuro, podemos adicionar lógica aqui para marcar todas as conversas como lidas no DB.
+  };
+
+  // Exibe "Carregando..." enquanto o estado de autenticação é verificado
   if (authLoading) {
-    return <div>Carregando aplicação...</div>;
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
   }
 
   return (
@@ -79,14 +135,13 @@ function App() {
         user={user}
         onLoginClick={handleOpenLogin}
         onRegisterClick={handleOpenRegister}
+        hasUnreadMessages={hasUnreadMessages}
       />
 
       <main>
         <Routes>
-          {/* CORREÇÃO: Passando o token para a HomePage */}
           <Route path="/" element={<HomePage token={token} />} />
           <Route path="/item/:itemId" element={<ItemDetailPage />} />
-
           <Route
             path="/my-area"
             element={
@@ -103,27 +158,26 @@ function App() {
               </PrivateRoute>
             }
           />
-
-          {/* MELHORIA: Adicionando a rota para a Caixa de Entrada */}
           <Route
             path="/conversations"
             element={
               <PrivateRoute token={token}>
-                <ConversationsPage token={token} />
+                <ConversationsPage
+                  token={token}
+                  onEnterPage={clearGlobalNotification}
+                />
               </PrivateRoute>
             }
           />
         </Routes>
       </main>
 
-      {/* Modal de Login */}
       <Modal open={openLoginModal} onClose={handleCloseLogin}>
         <Box sx={modalStyle}>
           <Login onLoginSuccess={handleCloseLogin} />
         </Box>
       </Modal>
 
-      {/* Modal de Cadastro */}
       <Modal open={openRegisterModal} onClose={handleCloseRegister}>
         <Box sx={modalStyle}>
           <Register onRegisterSuccess={handleCloseRegister} />

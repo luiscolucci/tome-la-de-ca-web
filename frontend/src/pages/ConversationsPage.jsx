@@ -2,7 +2,14 @@
 
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { auth } from "../firebase";
+import { db, auth } from "../firebase";
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  onSnapshot,
+} from "firebase/firestore";
 import {
   Box,
   Typography,
@@ -13,29 +20,44 @@ import {
   Avatar,
   Divider,
   CircularProgress,
+  Badge,
 } from "@mui/material";
 
-function ConversationsPage({ token }) {
+// O componente agora recebe a função para limpar a notificação global
+function ConversationsPage({ token, onEnterPage }) {
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const currentUserId = auth.currentUser?.uid;
 
+  // Efeito que roda UMA VEZ quando a página abre para limpar a notificação do Header
+  useEffect(() => {
+    if (onEnterPage) {
+      onEnterPage();
+    }
+  }, [onEnterPage]);
+
+  // Efeito que agora "escuta" as conversas em tempo real
   useEffect(() => {
     if (!token) return;
 
-    fetch("http://localhost:3001/api/conversations", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        setConversations(data);
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error("Erro ao buscar conversas:", error);
-        setLoading(false);
+    const conversationsRef = collection(db, "conversations");
+    const q = query(
+      conversationsRef,
+      where("participantIds", "array-contains", currentUserId),
+      orderBy("updatedAt", "desc")
+    );
+
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const convos = [];
+      querySnapshot.forEach((doc) => {
+        convos.push({ id: doc.id, ...doc.data() });
       });
-  }, [token]);
+      setConversations(convos);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [token, currentUserId]);
 
   if (loading) {
     return (
@@ -55,36 +77,28 @@ function ConversationsPage({ token }) {
           <Typography>Você não tem nenhuma conversa ainda.</Typography>
         ) : (
           conversations.map((convo, index) => {
-            // Lógica para encontrar o nome e o ID do OUTRO participante
             const otherParticipantId = convo.participantIds.find(
               (id) => id !== currentUserId
             );
             const otherParticipantName =
               convo.participantNames[otherParticipantId];
 
+            // Lógica para saber se a conversa está "não lida" para o usuário atual
+            const isUnread =
+              convo.lastSenderId && convo.lastSenderId !== currentUserId;
+
             return (
               <React.Fragment key={convo.id}>
-                <ListItem
-                  alignItems="flex-start"
-                  button
-                  component={Link}
-                  to={`/chat/${convo.id}`}
-                >
+                <ListItem button component={Link} to={`/chat/${convo.id}`}>
                   <ListItemAvatar>
-                    <Avatar alt={convo.itemTitle} src={convo.itemImageUrl} />
+                    {/* O BADGE MOSTRA O PONTO DE NOTIFICAÇÃO INDIVIDUAL */}
+                    <Badge color="error" variant="dot" invisible={!isUnread}>
+                      <Avatar alt={convo.itemTitle} src={convo.itemImageUrl} />
+                    </Badge>
                   </ListItemAvatar>
                   <ListItemText
                     primary={`Conversa com ${otherParticipantName}`}
-                    secondary={
-                      <Typography
-                        sx={{ display: "inline" }}
-                        component="span"
-                        variant="body2"
-                        color="text.primary"
-                      >
-                        Sobre o item: {convo.itemTitle}
-                      </Typography>
-                    }
+                    secondary={`Sobre o item: ${convo.itemTitle}`}
                   />
                 </ListItem>
                 {index < conversations.length - 1 && (
