@@ -31,6 +31,10 @@ function Header({ user, onLoginClick, onRegisterClick, hasUnreadMessages }) {
               Olá, {user.displayName || user.email}
             </Typography>
 
+            <Button component={Link} to="/wishlist" color="inherit">
+              Interesses
+            </Button>
+
             <Button component={Link} to="/conversations" color="inherit">
               <Badge color="error" variant="dot" invisible={!hasUnreadMessages}>
                 Conversas
@@ -59,4 +63,5 @@ function Header({ user, onLoginClick, onRegisterClick, hasUnreadMessages }) {
   );
 }
 
+// A LINHA QUE FALTAVA ESTÁ AQUI
 export default Header;

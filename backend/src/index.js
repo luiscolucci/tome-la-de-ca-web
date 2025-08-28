@@ -9,7 +9,8 @@ const cors = require("cors");
 // Importa os arquivos de rotas
 const authRoutes = require("./routes/auth.routes");
 const itemRoutes = require("./routes/item.routes");
-const conversationRoutes = require("./routes/conversation.routes"); // <-- 1. IMPORTE AS NOVAS ROTAS
+const conversationRoutes = require("./routes/conversation.routes");
+const userRoutes = require("./routes/user.routes"); // <-- 1. IMPORTE AS NOVAS ROTAS
 
 const app = express();
 
@@ -25,7 +26,8 @@ app.get("/", (req, res) => {
 // Conecta as rotas ao servidor com seus prefixos
 app.use("/api/auth", authRoutes);
 app.use("/api/items", itemRoutes);
-app.use("/api/conversations", conversationRoutes); // <-- 2. USE AS NOVAS ROTAS
+app.use("/api/conversations", conversationRoutes);
+app.use("/api/users", userRoutes); // <-- 2. USE AS NOVAS ROTAS
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {

@@ -21,6 +21,7 @@ import ItemDetailPage from "./pages/ItemDetailPage";
 import MyAreaPage from "./pages/MyAreaPage";
 import ChatPage from "./pages/ChatPage";
 import ConversationsPage from "./pages/ConversationsPage";
+import WishlistPage from "./pages/WishlistPage"; // <-- IMPORTE A NOVA PÁGINA
 
 // Importa os componentes de formulário
 import Login from "./components/Login";
@@ -166,6 +167,14 @@ function App() {
                   token={token}
                   onEnterPage={clearGlobalNotification}
                 />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/wishlist"
+            element={
+              <PrivateRoute token={token}>
+                <WishlistPage token={token} />
               </PrivateRoute>
             }
           />
