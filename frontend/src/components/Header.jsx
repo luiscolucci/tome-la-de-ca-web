@@ -30,7 +30,11 @@ function Header({ user, onLoginClick, onRegisterClick }) {
               Olá, {user.displayName || user.email}
             </Typography>
 
-            {/* NOVO BOTÃO QUE LEVA PARA A /my-area */}
+            {/* BOTÃO ADICIONADO PARA A CAIXA DE ENTRADA */}
+            <Button component={Link} to="/conversations" color="inherit">
+              Conversas
+            </Button>
+
             <Button component={Link} to="/my-area" color="inherit">
               Minha Área
             </Button>

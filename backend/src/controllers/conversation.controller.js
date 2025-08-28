@@ -5,14 +5,13 @@ const { db } = require("../services/firebase");
 // Função para iniciar uma nova conversa ou encontrar uma existente
 const startConversation = async (req, res) => {
   try {
-    const { itemId } = req.body; // O frontend nos enviará o ID do item
-    const buyerId = req.user.uid; // O ID do comprador (usuário logado) vem do token
+    const { itemId } = req.body;
+    const buyerId = req.user.uid;
 
     if (!itemId) {
       return res.status(400).send({ error: "O ID do item é obrigatório." });
     }
 
-    // 1. Busca os dados do item para encontrar o dono (vendedor)
     const itemRef = db.collection("items").doc(itemId);
     const itemDoc = await itemRef.get();
     if (!itemDoc.exists) {
@@ -21,18 +20,14 @@ const startConversation = async (req, res) => {
     const itemData = itemDoc.data();
     const sellerId = itemData.userId;
 
-    // 2. Verifica se o usuário está tentando iniciar uma conversa consigo mesmo
     if (buyerId === sellerId) {
-      return res
-        .status(400)
-        .send({
-          error: "Você não pode iniciar uma conversa sobre um item seu.",
-        });
+      return res.status(400).send({
+        error: "Você não pode iniciar uma conversa sobre um item seu.",
+      });
     }
 
     const participantIds = [buyerId, sellerId];
 
-    // 3. Verifica se já existe uma conversa entre esses dois usuários sobre este item
     const conversationsRef = db.collection("conversations");
     const querySnapshot = await conversationsRef
       .where("itemId", "==", itemId)
@@ -42,13 +37,11 @@ const startConversation = async (req, res) => {
     let existingConversation = null;
     querySnapshot.forEach((doc) => {
       const data = doc.data();
-      // Garante que a conversa é exatamente entre estes dois participantes
       if (data.participantIds.includes(sellerId)) {
         existingConversation = { id: doc.id, ...data };
       }
     });
 
-    // 4. Se a conversa já existe, retorna o ID dela
     if (existingConversation) {
       return res.status(200).send({
         message: "Conversa já existente.",
@@ -56,7 +49,6 @@ const startConversation = async (req, res) => {
       });
     }
 
-    // 5. Se não existe, cria uma nova conversa
     const newConversation = {
       participantIds,
       participantNames: {
@@ -81,7 +73,6 @@ const startConversation = async (req, res) => {
       conversationId: conversationRef.id,
     });
   } catch (error) {
-    // Este erro provavelmente será sobre a falta de um índice no Firestore
     console.error("Erro ao iniciar conversa:", error);
     res
       .status(500)
@@ -89,6 +80,36 @@ const startConversation = async (req, res) => {
   }
 };
 
+// --- FUNÇÃO ADICIONADA ---
+const getUserConversations = async (req, res) => {
+  try {
+    const { uid } = req.user; // Pega o ID do usuário logado
+
+    const querySnapshot = await db
+      .collection("conversations")
+      .where("participantIds", "array-contains", uid)
+      .orderBy("updatedAt", "desc") // Ordena pelas mais recentes
+      .get();
+
+    const conversations = [];
+    querySnapshot.forEach((doc) => {
+      conversations.push({
+        id: doc.id,
+        ...doc.data(),
+      });
+    });
+
+    res.status(200).send(conversations);
+  } catch (error) {
+    console.error("Erro ao buscar conversas do usuário:", error);
+    res
+      .status(500)
+      .send({ error: "Ocorreu um erro no servidor.", details: error.message });
+  }
+};
+
+// --- EXPORTAÇÃO ATUALIZADA ---
 module.exports = {
   startConversation,
+  getUserConversations,
 };

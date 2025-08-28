@@ -3,10 +3,18 @@
 const express = require("express");
 const router = express.Router();
 
-const { startConversation } = require("../controllers/conversation.controller");
+// 1. IMPORTAMOS A NOVA FUNÇÃO JUNTO COM A ANTIGA
+const {
+  startConversation,
+  getUserConversations,
+} = require("../controllers/conversation.controller");
 const { checkAuth } = require("../middleware/auth.middleware");
 
-// Rota para iniciar uma conversa. Protegida, pois o usuário precisa estar logado.
+// Rota para INICIAR uma conversa (continua a mesma)
 router.post("/", checkAuth, startConversation);
+
+// 2. ADICIONAMOS A NOVA ROTA PARA LISTAR AS CONVERSAS
+// Também é protegida, pois o usuário precisa estar logado.
+router.get("/", checkAuth, getUserConversations);
 
 module.exports = router;

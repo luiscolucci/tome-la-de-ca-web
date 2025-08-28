@@ -19,6 +19,7 @@ import HomePage from "./pages/HomePage";
 import ItemDetailPage from "./pages/ItemDetailPage";
 import MyAreaPage from "./pages/MyAreaPage";
 import ChatPage from "./pages/ChatPage";
+import ConversationsPage from "./pages/ConversationsPage";
 import Login from "./components/Login";
 import Register from "./components/Register";
 
@@ -36,8 +37,6 @@ const modalStyle = {
 };
 
 // Componente auxiliar para proteger rotas
-// Se o usuário estiver logado (tem token), mostra a página.
-// Se não, redireciona para a página inicial.
 const PrivateRoute = ({ token, children }) => {
   return token ? children : <Navigate to="/" />;
 };
@@ -47,17 +46,14 @@ function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [user, setUser] = useState(null);
 
-  // Estados para controlar a visibilidade dos modais
   const [openLoginModal, setOpenLoginModal] = useState(false);
   const [openRegisterModal, setOpenRegisterModal] = useState(false);
 
-  // Funções para abrir e fechar os modais
   const handleOpenLogin = () => setOpenLoginModal(true);
   const handleCloseLogin = () => setOpenLoginModal(false);
   const handleOpenRegister = () => setOpenRegisterModal(true);
   const handleCloseRegister = () => setOpenRegisterModal(false);
 
-  // Efeito que roda uma vez para verificar o estado de autenticação do usuário
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
@@ -70,18 +66,15 @@ function App() {
       }
       setAuthLoading(false);
     });
-    // Limpa o "ouvinte" quando o componente é desmontado para evitar vazamentos de memória
     return () => unsubscribe();
   }, []);
 
-  // Mostra uma mensagem de "Carregando..." enquanto verifica a sessão do usuário
   if (authLoading) {
     return <div>Carregando aplicação...</div>;
   }
 
   return (
     <Router>
-      {/* O Header é renderizado fora do <Routes> para aparecer em todas as páginas */}
       <Header
         user={user}
         onLoginClick={handleOpenLogin}
@@ -89,12 +82,11 @@ function App() {
       />
 
       <main>
-        {/* O <Routes> decide qual página renderizar com base na URL */}
         <Routes>
-          <Route path="/" element={<HomePage />} />
+          {/* CORREÇÃO: Passando o token para a HomePage */}
+          <Route path="/" element={<HomePage token={token} />} />
           <Route path="/item/:itemId" element={<ItemDetailPage />} />
 
-          {/* Nossa nova rota protegida para a "Minha Área" */}
           <Route
             path="/my-area"
             element={
@@ -108,6 +100,16 @@ function App() {
             element={
               <PrivateRoute token={token}>
                 <ChatPage />
+              </PrivateRoute>
+            }
+          />
+
+          {/* MELHORIA: Adicionando a rota para a Caixa de Entrada */}
+          <Route
+            path="/conversations"
+            element={
+              <PrivateRoute token={token}>
+                <ConversationsPage token={token} />
               </PrivateRoute>
             }
           />
