@@ -9,20 +9,51 @@ import {
   Grid,
   Box,
   CardMedia,
+  CircularProgress,
 } from "@mui/material";
 
-function ItemList({ refreshKey }) {
+// 1. O componente agora recebe os props para pesquisa e filtro
+function ItemList({ refreshKey, searchTerm, selectedCategory }) {
   const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost:3001/api/items")
+    setLoading(true);
+    // 2. Constrói a URL dinamicamente com os parâmetros de pesquisa
+    const params = new URLSearchParams();
+    if (searchTerm) {
+      params.append("search", searchTerm);
+    }
+    if (selectedCategory && selectedCategory !== "Todos") {
+      params.append("category", selectedCategory);
+    }
+
+    const queryString = params.toString();
+    const fetchUrl = `http://localhost:3001/api/items?${queryString}`;
+
+    fetch(fetchUrl)
       .then((response) => response.json())
-      .then((data) => setItems(data))
-      .catch((error) => console.error("Erro ao buscar itens:", error));
-  }, [refreshKey]);
+      .then((data) => {
+        setItems(data);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Erro ao buscar itens:", error);
+        setLoading(false);
+      });
+    // 3. O useEffect agora depende também dos termos de pesquisa para se atualizar automaticamente
+  }, [refreshKey, searchTerm, selectedCategory]);
+
+  if (loading) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
-    <Box sx={{ flexGrow: 1, padding: 2 }}>
+    <Box sx={{ flexGrow: 1 }}>
       <Typography variant="h4" component="h2" gutterBottom>
         Itens Disponíveis
       </Typography>
@@ -30,7 +61,9 @@ function ItemList({ refreshKey }) {
       <Grid container spacing={3}>
         {items.length === 0 ? (
           <Grid item xs={12}>
-            <Typography>Nenhum item encontrado.</Typography>
+            <Typography>
+              Nenhum item encontrado com os filtros atuais.
+            </Typography>
           </Grid>
         ) : (
           items.map((item) => (
@@ -61,14 +94,11 @@ function ItemList({ refreshKey }) {
                       {item.title}
                     </Link>
                   </Typography>
-
-                  {/* NOVO: Exibe o preço apenas se o item for do tipo 'venda' */}
                   {item.type === "venda" && (
                     <Typography variant="h6" color="primary" sx={{ mb: 1 }}>
                       R$ {Number(item.price).toFixed(2).replace(".", ",")}
                     </Typography>
                   )}
-
                   <Typography variant="body2" color="text.secondary">
                     {item.description.substring(0, 100)}...
                   </Typography>
