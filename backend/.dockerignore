@@ -1,0 +1,8 @@
+# Ignora a pasta de dependências, pois ela será instalada dentro do contentor
+node_modules
+
+# Ignora o ficheiro .env local, pois as variáveis de ambiente serão configuradas na nuvem
+.env
+
+# Ficheiros de log do npm
+npm-debug.log
