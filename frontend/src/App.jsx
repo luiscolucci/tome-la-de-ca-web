@@ -51,7 +51,8 @@ const modalStyle = {
 
 // Componente auxiliar para proteger rotas
 const PrivateRoute = ({ token, children }) => {
-  return token ? children : <Navigate to="/" />;
+  // <<< CORREÇÃO APLICADA AQUI: Adicionamos a propriedade "replace"
+  return token ? children : <Navigate to="/" replace />;
 };
 
 function App() {

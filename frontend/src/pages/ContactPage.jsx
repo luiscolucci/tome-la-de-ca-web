@@ -9,7 +9,9 @@ import {
   Button,
   Paper,
   CircularProgress,
+  Grid, // Importação movida para o topo
 } from "@mui/material";
+import API_BASE_URL from "../api"; // Importa a URL base da API
 
 function ContactPage() {
   const [name, setName] = useState("");
@@ -25,7 +27,7 @@ function ContactPage() {
     setSubmissionResult(null);
 
     try {
-      const response = await fetch("http://localhost:3001/api/support", {
+      const response = await fetch(`${API_BASE_URL}/api/support`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -159,8 +161,5 @@ function ContactPage() {
     </Container>
   );
 }
-
-// Pequena correção: Adicionar a importação do Grid
-import { Grid } from "@mui/material";
 
 export default ContactPage;

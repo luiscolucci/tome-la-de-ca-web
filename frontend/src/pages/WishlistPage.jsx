@@ -12,6 +12,7 @@ import {
   Button,
   CircularProgress,
 } from "@mui/material";
+import API_BASE_URL from "../api"; // Importa a URL base da API
 
 function WishlistPage({ token }) {
   const [wishlistItems, setWishlistItems] = useState([]);
@@ -21,7 +22,7 @@ function WishlistPage({ token }) {
   const fetchWishlist = () => {
     if (!token) return;
 
-    fetch("http://localhost:3001/api/users/wishlist", {
+    fetch(`${API_BASE_URL}/api/users/wishlist`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((response) => response.json())
@@ -44,7 +45,7 @@ function WishlistPage({ token }) {
 
     try {
       const response = await fetch(
-        `http://localhost:3001/api/users/wishlist/${itemId}`,
+        `${API_BASE_URL}/api/users/wishlist/${itemId}`,
         {
           method: "DELETE",
           headers: {
@@ -70,7 +71,7 @@ function WishlistPage({ token }) {
   const handleStartChat = async (itemId) => {
     if (!token) return;
     try {
-      const response = await fetch("http://localhost:3001/api/conversations", {
+      const response = await fetch(`${API_BASE_URL}/api/conversations`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

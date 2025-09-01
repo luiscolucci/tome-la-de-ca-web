@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import API_BASE_URL from "../api"; // Usado para a URL base da API
 
 function MyItems({ token, refreshKey }) {
   const [myItems, setMyItems] = useState([]);
@@ -9,7 +10,7 @@ function MyItems({ token, refreshKey }) {
   useEffect(() => {
     if (!token) return;
 
-    fetch("http://localhost:3001/api/items/my-items", {
+    fetch(`${API_BASE_URL}/api/items/my-items`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -25,15 +26,12 @@ function MyItems({ token, refreshKey }) {
       return;
     }
     try {
-      const response = await fetch(
-        `http://localhost:3001/api/items/${itemId}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await fetch(`${API_BASE_URL}/api/items/${itemId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       if (!response.ok) {
         throw new Error("Falha ao apagar o item.");
       }
@@ -50,7 +48,7 @@ function MyItems({ token, refreshKey }) {
   const handleUpdateStatus = async (itemId, newStatus) => {
     try {
       const response = await fetch(
-        `http://localhost:3001/api/items/${itemId}/status`,
+        `${API_BASE_URL}/api/items/${itemId}/status`,
         {
           method: "PATCH",
           headers: {

@@ -5,6 +5,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { Box, Typography, CircularProgress, Button } from "@mui/material";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../firebase";
+import API_BASE_URL from "../api"; // Importa a URL base da API
 
 function ItemDetailPage() {
   const { itemId } = useParams();
@@ -25,7 +26,7 @@ function ItemDetailPage() {
 
   // Efeito para buscar os dados do item do backend
   useEffect(() => {
-    fetch(`http://localhost:3001/api/items/${itemId}`)
+    fetch(`${API_BASE_URL}/api/items/${itemId}`)
       .then((response) => {
         if (!response.ok)
           throw new Error("Item não encontrado ou falha na rede");
@@ -48,7 +49,7 @@ function ItemDetailPage() {
     if (!currentUser) return;
     try {
       const token = await currentUser.getIdToken();
-      const response = await fetch("http://localhost:3001/api/conversations", {
+      const response = await fetch(`${API_BASE_URL}/api/conversations`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -70,7 +71,7 @@ function ItemDetailPage() {
     if (!currentUser) return;
     try {
       const token = await currentUser.getIdToken();
-      const response = await fetch("http://localhost:3001/api/users/wishlist", {
+      const response = await fetch(`${API_BASE_URL}/api/users/wishlist`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

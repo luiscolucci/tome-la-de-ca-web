@@ -7,12 +7,12 @@ import { getFirestore } from "firebase/firestore"; // 1. IMPORTE O FIRESTORE
 
 // TODO: Cole a configuração do seu projeto Firebase aqui
 const firebaseConfig = {
-  apiKey: "AIzaSyAkhcCluIujeBeM2btjBGBLlgWG_BUl-Z4",
-  authDomain: "tome-la-de-ca.firebaseapp.com",
-  projectId: "tome-la-de-ca",
-  storageBucket: "tome-la-de-ca.firebasestorage.app",
-  messagingSenderId: "269111269657",
-  appId: "1:269111269657:web:2ca0fe2dde536abe994d88",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
 // Inicializa o Firebase

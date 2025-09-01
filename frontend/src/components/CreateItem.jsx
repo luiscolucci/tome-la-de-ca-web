@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { storage } from "../firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import API_BASE_URL from "../api"; // O caminho pode variar um pouco
 // 1. IMPORTAMOS MAIS COMPONENTES DO MUI PARA O MENU DE SELEÇÃO
 import {
   Box,
@@ -79,7 +80,7 @@ function CreateItem({ token, onItemCreated }) {
         price: type === "venda" ? price : null,
       };
 
-      const response = await fetch("http://localhost:3001/api/items", {
+      const response = await fetch(`${API_BASE_URL}/api/items`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

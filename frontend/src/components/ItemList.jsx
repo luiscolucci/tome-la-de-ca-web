@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import API_BASE_URL from "../api"; // O caminho pode variar um pouco
 import {
   Card,
   CardContent,
@@ -33,7 +34,7 @@ function ItemList({ refreshKey, searchTerm, selectedCategory, page, setPage }) {
     params.append("page", page);
 
     const queryString = params.toString();
-    const fetchUrl = `http://localhost:3001/api/items?${queryString}`;
+    const fetchUrl = `${API_BASE_URL}/api/items?${queryString}`;
 
     fetch(fetchUrl)
       .then((response) => response.json())

@@ -1,6 +1,7 @@
 // frontend/src/components/Register.jsx
 
 import React, { useState } from "react";
+import API_BASE_URL from "../api"; // Importa a URL base da API
 
 // Importa os componentes do Material-UI
 import { Box, Typography, TextField, Button } from "@mui/material";
@@ -14,7 +15,7 @@ function Register({ onRegisterSuccess }) {
   const handleSubmit = async (event) => {
     event.preventDefault();
     try {
-      const response = await fetch("http://localhost:3001/api/auth/register", {
+      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
