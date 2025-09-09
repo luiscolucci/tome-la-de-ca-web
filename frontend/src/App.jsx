@@ -1,5 +1,4 @@
 // frontend/src/App.jsx
-
 import React, { useState, useEffect } from "react";
 import {
   BrowserRouter as Router,
@@ -10,8 +9,6 @@ import {
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "./firebase";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
-
-// Importa componentes do Material-UI
 import {
   ThemeProvider,
   CssBaseline,
@@ -21,7 +18,6 @@ import {
 } from "@mui/material";
 import theme from "./theme";
 
-// Importa os nossos componentes e páginas
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import HomePage from "./pages/HomePage";
@@ -35,7 +31,6 @@ import ContactPage from "./pages/ContactPage";
 import Login from "./components/Login";
 import Register from "./components/Register";
 
-// Estilo padrão para a caixa (Box) do Modal
 const modalStyle = {
   position: "absolute",
   top: "50%",
@@ -49,10 +44,8 @@ const modalStyle = {
   p: 4,
 };
 
-// Componente auxiliar para proteger rotas
 const PrivateRoute = ({ token, children }) => {
-  // <<< CORREÇÃO APLICADA AQUI: Adicionamos a propriedade "replace"
-  return token ? children : <Navigate to="/" replace />;
+  return token ? children : <Navigate to="/" />;
 };
 
 function App() {
@@ -63,13 +56,11 @@ function App() {
   const [openRegisterModal, setOpenRegisterModal] = useState(false);
   const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
 
-  // Funções para abrir e fechar os modais
   const handleOpenLogin = () => setOpenLoginModal(true);
   const handleCloseLogin = () => setOpenLoginModal(false);
   const handleOpenRegister = () => setOpenRegisterModal(true);
   const handleCloseRegister = () => setOpenRegisterModal(false);
 
-  // Efeito para verificar a sessão do utilizador ao carregar a página
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
@@ -85,7 +76,6 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  // Efeito "ouvinte global" para notificações de novas mensagens
   useEffect(() => {
     if (!user) {
       setHasUnreadMessages(false);
@@ -134,7 +124,6 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      {/* O <Router> DEVE ENVOLVER TUDO O QUE USA NAVEGAÇÃO */}
       <Router>
         <Box
           sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
@@ -188,11 +177,7 @@ function App() {
               />
             </Routes>
           </main>
-
-          {/* O Footer está aqui, DENTRO do <Router> */}
           <Footer />
-
-          {/* Os Modais não usam navegação, por isso podem ficar aqui */}
           <Modal open={openLoginModal} onClose={handleCloseLogin}>
             <Box sx={modalStyle}>
               <Login onLoginSuccess={handleCloseLogin} />

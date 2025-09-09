@@ -1,5 +1,4 @@
 // frontend/src/components/SearchAndFilter.jsx
-
 import React from "react";
 import {
   Box,
@@ -15,7 +14,7 @@ const categories = [
   "Todos",
   "Roupas",
   "Brinquedos",
-  "Eletrónicos",
+  "Eletrônicos", // Corrigido de "Eletrónicos" para consistência
   "Móveis",
   "Livros",
   "Outros",
@@ -27,6 +26,7 @@ function SearchAndFilter({
   setSearchTerm,
   selectedCategory,
   setSelectedCategory,
+  onSearch,
 }) {
   return (
     <Box
@@ -42,7 +42,10 @@ function SearchAndFilter({
         label="Pesquisar por nome ou descrição"
         variant="outlined"
         value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
+        onChange={(e) => {
+          setSearchTerm(e.target.value);
+          onSearch(); // Reseta a página para 1 ao mudar o searchTerm
+        }}
         sx={{ flexGrow: 1, minWidth: "250px" }}
       />
       <FormControl sx={{ minWidth: 200 }}>

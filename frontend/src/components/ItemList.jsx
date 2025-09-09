@@ -1,8 +1,6 @@
 // frontend/src/components/ItemList.jsx
-
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import API_BASE_URL from "../api"; // O caminho pode variar um pouco
 import {
   Card,
   CardContent,
@@ -10,72 +8,66 @@ import {
   Grid,
   Box,
   CardMedia,
-  CircularProgress,
   Pagination,
+  CircularProgress,
 } from "@mui/material";
+import { getItems } from "../api"; // ✅ usamos a função pronta da API
 
-// 1. O componente agora recebe 'page' e 'setPage'
-function ItemList({ refreshKey, searchTerm, selectedCategory, page, setPage }) {
+function ItemList({ searchTerm, category, page, onPageChange }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  // 2. Novo estado para guardar o número total de páginas
   const [totalPages, setTotalPages] = useState(0);
 
   useEffect(() => {
-    setLoading(true);
-    const params = new URLSearchParams();
-    if (searchTerm) {
-      params.append("search", searchTerm);
-    }
-    if (selectedCategory && selectedCategory !== "Todos") {
-      params.append("category", selectedCategory);
-    }
-    // 3. Adiciona o parâmetro da página à URL
-    params.append("page", page);
+    async function fetchData() {
+      setLoading(true);
+      try {
+        // Monta query params dinamicamente
+        const params = new URLSearchParams({
+          page,
+          search: searchTerm || "",
+        });
 
-    const queryString = params.toString();
-    const fetchUrl = `${API_BASE_URL}/api/items?${queryString}`;
+        if (category && category !== "Todos") {
+          params.append("category", category);
+        }
 
-    fetch(fetchUrl)
-      .then((response) => response.json())
-      .then((data) => {
-        // 4. O backend agora retorna um objeto, então guardamos as partes corretas
-        setItems(data.items);
-        setTotalPages(data.totalPages);
-        setLoading(false);
-      })
-      .catch((error) => {
+        console.log("Buscando itens em:", `/api/items?${params.toString()}`);
+
+        // Chama a função da API
+        const data = await getItems(params.toString());
+
+        setItems(data.items || []);
+        setTotalPages(data.totalPages || 1);
+      } catch (error) {
         console.error("Erro ao buscar itens:", error);
+        setItems([]);
+        setTotalPages(1);
+      } finally {
         setLoading(false);
-      });
-    // 5. O useEffect agora também depende da 'page' para se atualizar
-  }, [refreshKey, searchTerm, selectedCategory, page]);
+      }
+    }
 
-  // 6. Função para lidar com a mudança de página
-  const handlePageChange = (event, value) => {
-    setPage(value);
-  };
+    fetchData();
+  }, [searchTerm, category, page]);
 
   if (loading) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+      <Box sx={{ display: "flex", justifyContent: "center", my: 4 }}>
         <CircularProgress />
       </Box>
     );
   }
 
   return (
-    <Box sx={{ flexGrow: 1 }}>
+    <Box sx={{ flexGrow: 1, padding: 2 }}>
       <Typography variant="h4" component="h2" gutterBottom>
         Itens Disponíveis
       </Typography>
-
       <Grid container spacing={3}>
         {items.length === 0 ? (
           <Grid item xs={12}>
-            <Typography>
-              Nenhum item encontrado com os filtros atuais.
-            </Typography>
+            <Typography>Nenhum item encontrado.</Typography>
           </Grid>
         ) : (
           items.map((item) => (
@@ -85,6 +77,8 @@ function ItemList({ refreshKey, searchTerm, selectedCategory, page, setPage }) {
                   height: "100%",
                   display: "flex",
                   flexDirection: "column",
+                  transition: "transform 0.2s, box-shadow 0.2s",
+                  "&:hover": { transform: "scale(1.03)", boxShadow: 6 },
                 }}
               >
                 <CardMedia
@@ -106,7 +100,7 @@ function ItemList({ refreshKey, searchTerm, selectedCategory, page, setPage }) {
                       {item.title}
                     </Link>
                   </Typography>
-                  {item.type === "venda" && (
+                  {item.type === "venda" && item.price && (
                     <Typography variant="h6" color="primary" sx={{ mb: 1 }}>
                       R$ {Number(item.price).toFixed(2).replace(".", ",")}
                     </Typography>
@@ -125,14 +119,12 @@ function ItemList({ refreshKey, searchTerm, selectedCategory, page, setPage }) {
           ))
         )}
       </Grid>
-
-      {/* 7. ADICIONAR O COMPONENTE DE PAGINAÇÃO */}
       {totalPages > 1 && (
         <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
           <Pagination
             count={totalPages}
             page={page}
-            onChange={handlePageChange}
+            onChange={(event, value) => onPageChange(value)}
             color="primary"
           />
         </Box>

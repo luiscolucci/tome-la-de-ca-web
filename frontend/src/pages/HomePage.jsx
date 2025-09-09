@@ -1,49 +1,45 @@
 // frontend/src/pages/HomePage.jsx
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Container } from "@mui/material";
-
 import ItemList from "../components/ItemList";
 import SearchAndFilter from "../components/SearchAndFilter";
 
 function HomePage() {
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("Todos");
-  // 1. NOVO ESTADO PARA CONTROLAR A PÁGINA ATUAL
-  const [page, setPage] = useState(1);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const searchParams = new URLSearchParams(location.search);
 
-  const triggerRefresh = () => {
-    setRefreshKey((oldKey) => oldKey + 1);
-  };
+  const [searchTerm, setSearchTerm] = useState(
+    searchParams.get("search") || ""
+  );
+  const [category, setCategory] = useState(
+    searchParams.get("category") || "Todos"
+  );
+  const [page, setPage] = useState(parseInt(searchParams.get("page")) || 1);
 
-  // Função para garantir que a pesquisa volta para a primeira página
-  const handleSearchChange = (newSearchTerm) => {
-    setSearchTerm(newSearchTerm);
-    setPage(1); // Volta para a página 1 ao pesquisar
-  };
-
-  const handleCategoryChange = (newCategory) => {
-    setSelectedCategory(newCategory);
-    setPage(1); // Volta para a página 1 ao filtrar
-  };
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (searchTerm) params.set("search", searchTerm);
+    if (category && category !== "Todos") params.set("category", category);
+    if (page > 1) params.set("page", page);
+    navigate({ search: params.toString() }, { replace: true });
+  }, [searchTerm, category, page, navigate]);
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <SearchAndFilter
         searchTerm={searchTerm}
-        setSearchTerm={handleSearchChange}
-        selectedCategory={selectedCategory}
-        setSelectedCategory={handleCategoryChange}
+        setSearchTerm={setSearchTerm}
+        selectedCategory={category} // Alinha com o nome esperado pelo SearchAndFilter
+        setSelectedCategory={setCategory} // Alinha com o nome esperado pelo SearchAndFilter
+        onSearch={() => setPage(1)} // Reseta a página para 1 em nova busca
       />
-
-      {/* 2. PASSAMOS O ESTADO DA PÁGINA E A FUNÇÃO PARA O ATUALIZAR PARA A ItemList */}
       <ItemList
-        refreshKey={refreshKey}
         searchTerm={searchTerm}
-        selectedCategory={selectedCategory}
+        category={category}
         page={page}
-        setPage={setPage}
+        onPageChange={(newPage) => setPage(newPage)} // Corrige para passar uma função com argumento
       />
     </Container>
   );

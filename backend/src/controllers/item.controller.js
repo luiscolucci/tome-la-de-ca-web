@@ -1,69 +1,15 @@
-// backend/src/controllers/item.controller.js
-
 const { db } = require("../services/firebase");
-const { FieldValue } = require("firebase-admin/firestore");
-
-// --- FUNÇÃO PRINCIPALMENTE ALTERADA ---
-const getAllItems = async (req, res) => {
-  try {
-    const { search, category, page = 1 } = req.query;
-    const ITEMS_PER_PAGE = 9; // Mostraremos 9 itens por página
-
-    // 1. Constrói a consulta base com os filtros
-    let baseQuery = db.collection("items").where("status", "==", "disponível");
-    if (category && category !== "Todos") {
-      baseQuery = baseQuery.where("category", "==", category);
-    }
-
-    // 2. Faz uma primeira consulta para contar o total de itens que correspondem aos filtros
-    // (Isto é necessário para o frontend saber quantas páginas existem no total)
-    const countSnapshot = await baseQuery.get();
-    let totalItems = countSnapshot.size;
-
-    // Filtro de pesquisa por texto (feito no servidor após a busca inicial)
-    let filteredItems = [];
-    countSnapshot.forEach((doc) => {
-      filteredItems.push({ id: doc.id, ...doc.data() });
-    });
-
-    if (search) {
-      filteredItems = filteredItems.filter(
-        (item) =>
-          item.title.toLowerCase().includes(search.toLowerCase()) ||
-          item.description.toLowerCase().includes(search.toLowerCase())
-      );
-      totalItems = filteredItems.length;
-    }
-
-    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
-
-    // 3. Pega a fatia (slice) de itens correspondente à página atual
-    const startIndex = (page - 1) * ITEMS_PER_PAGE;
-    const endIndex = startIndex + ITEMS_PER_PAGE;
-    const itemsForPage = filteredItems.slice(startIndex, endIndex);
-
-    // 4. Retorna os itens da página e as informações de paginação
-    res.status(200).send({
-      items: itemsForPage,
-      totalPages: totalPages,
-      currentPage: Number(page),
-    });
-  } catch (error) {
-    console.error("Erro ao listar todos os itens:", error);
-    res.status(500).send({ error: "Ocorreu um erro no servidor." });
-  }
-};
-
-// --- O RESTO DAS FUNÇÕES CONTINUA IGUAL ---
 
 const createItem = async (req, res) => {
   try {
     const { title, description, category, type, price, quantity, imageUrls } =
       req.body;
     const { uid, name } = req.user;
+
     if (!title || !description || !category || !type) {
       return res.status(400).send({ error: "Campos obrigatórios faltando." });
     }
+
     if (type === "venda" && (!price || isNaN(price) || Number(price) <= 0)) {
       return res
         .status(400)
@@ -72,6 +18,7 @@ const createItem = async (req, res) => {
             "Para venda, um preço numérico válido maior que zero é obrigatório.",
         });
     }
+
     const newItem = {
       title,
       description,
@@ -85,16 +32,67 @@ const createItem = async (req, res) => {
       createdAt: new Date(),
       status: "disponível",
     };
+
     const itemRef = await db.collection("items").add(newItem);
-    res
-      .status(201)
-      .send({
-        message: "Item criado com sucesso!",
-        itemId: itemRef.id,
-        data: newItem,
-      });
+
+    res.status(201).send({
+      message: "Item criado com sucesso!",
+      itemId: itemRef.id,
+      data: newItem,
+    });
   } catch (error) {
     console.error("Erro ao criar item:", error);
+    res.status(500).send({ error: "Ocorreu um erro no servidor." });
+  }
+};
+
+const getAllItems = async (req, res) => {
+  try {
+    const { search = "", category = "", page = 1 } = req.query;
+    const itemsPerPage = 9;
+
+    let query = db.collection("items").where("status", "==", "disponível");
+
+    if (category) {
+      query = query.where("category", "==", category);
+    }
+
+    const allItemsSnapshot = await query.get();
+
+    let filteredItems = allItemsSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    if (search) {
+      const searchLower = search.toLowerCase();
+      filteredItems = filteredItems.filter(
+        (item) =>
+          item.title.toLowerCase().includes(searchLower) ||
+          item.description.toLowerCase().includes(searchLower)
+      );
+    }
+
+    const totalItems = filteredItems.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const startIndex = (page - 1) * itemsPerPage;
+    const paginatedItems = filteredItems.slice(
+      startIndex,
+      startIndex + itemsPerPage
+    );
+
+    // Ordena os itens da página atual por data
+    paginatedItems.sort(
+      (a, b) => b.createdAt.toMillis() - a.createdAt.toMillis()
+    );
+
+    res.status(200).send({
+      items: paginatedItems,
+      totalPages: totalPages,
+      currentPage: Number(page),
+    });
+  } catch (error) {
+    console.error("Erro ao listar todos os itens:", error);
     res.status(500).send({ error: "Ocorreu um erro no servidor." });
   }
 };
@@ -110,6 +108,8 @@ const getMyItems = async (req, res) => {
     itemsSnapshot.forEach((doc) => {
       items.push({ id: doc.id, ...doc.data() });
     });
+    // Ordena por data antes de enviar
+    items.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
     res.status(200).send(items);
   } catch (error) {
     console.error("Erro ao listar meus itens:", error);
