@@ -1,8 +1,0 @@
-# Ignora a pasta de dependências
-node_modules
-
-# Ignora a pasta de build local
-dist
-
-# Ficheiros de log
-npm-debug.log
