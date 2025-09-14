@@ -1,23 +1,22 @@
-# Etapa 1: Construir a aplicação
-FROM node:20-alpine AS builder
-WORKDIR /app
+# Etapa final
+# 1. Usar uma imagem base oficial do Node.js
+FROM node:20-alpine
+
+# 2. Definir o diretório de trabalho dentro do contêiner
+WORKDIR /usr/src/app
+
+# 3. Copiar os arquivos de dependências
 COPY package*.json ./
-# Instala apenas as dependências de produção para uma imagem mais leve
-RUN npm ci --only=production
+
+# 4. Instalar as dependências
+RUN npm install --only=production
+
+# 5. Copiar todo o resto do código da sua aplicação (incluindo o server.js já modificado)
 COPY . .
 
-# Etapa 2: Criar a imagem final
-FROM node:20-alpine
-WORKDIR /app
-
-# A CORREÇÃO: Define o ambiente para produção
-# Isso irá instruir nosso código a usar as credenciais automáticas da nuvem
-ENV NODE_ENV=production
-
-COPY --from=builder /app ./
-
-# O Cloud Run define a variável de ambiente PORT. Nosso servidor já a usa.
+# (Opcional, mas boa prática) Expor a porta que o contêiner usará.
+# O Cloud Run ignora isso e usa a variável PORT, mas é bom para documentação.
 EXPOSE 8080
 
-CMD ["node", "src/index.js"]
-
+# 6. Comando final para iniciar sua aplicação quando o contêiner for executado
+CMD [ "npm", "start" ]

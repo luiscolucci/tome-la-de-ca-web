@@ -1,22 +1,26 @@
+// backend/src/controllers/item.controller.js
+
 const { db } = require("../services/firebase");
 
+/**
+ * Cria um novo item na base de dados.
+ */
 const createItem = async (req, res) => {
   try {
     const { title, description, category, type, price, quantity, imageUrls } =
       req.body;
+    // req.user é adicionado pelo middleware checkAuth
     const { uid, name } = req.user;
 
+    // Validação de campos essenciais
     if (!title || !description || !category || !type) {
-      return res.status(400).send({ error: "Campos obrigatórios faltando." });
+      return res.status(400).send({ error: "Campos obrigatórios em falta." });
     }
-
     if (type === "venda" && (!price || isNaN(price) || Number(price) <= 0)) {
-      return res
-        .status(400)
-        .send({
-          error:
-            "Para venda, um preço numérico válido maior que zero é obrigatório.",
-        });
+      return res.status(400).send({
+        error:
+          "Para venda, é obrigatório um preço numérico válido maior que zero.",
+      });
     }
 
     const newItem = {
@@ -38,7 +42,6 @@ const createItem = async (req, res) => {
     res.status(201).send({
       message: "Item criado com sucesso!",
       itemId: itemRef.id,
-      data: newItem,
     });
   } catch (error) {
     console.error("Erro ao criar item:", error);
@@ -46,32 +49,65 @@ const createItem = async (req, res) => {
   }
 };
 
+/**
+ * Obtém todos os itens disponíveis, com filtros e paginação.
+ * Contém registos de diagnóstico detalhados.
+ */
 const getAllItems = async (req, res) => {
+  console.log("\n--- [getAllItems] Nova Requisição ---");
   try {
     const { search = "", category = "", page = 1 } = req.query;
-    const itemsPerPage = 9;
+    console.log(
+      `  -> Parâmetros recebidos: search='${search}', category='${category}', page='${page}'`
+    );
 
+    const itemsPerPage = 9;
     let query = db.collection("items").where("status", "==", "disponível");
 
-    if (category) {
+    if (category && category !== "Todos") {
+      console.log(`  -> A aplicar filtro de categoria: '${category}'`);
       query = query.where("category", "==", category);
     }
 
     const allItemsSnapshot = await query.get();
+    console.log(
+      `  -> O Firestore encontrou ${allItemsSnapshot.size} item(ns) com o estado 'disponível' (e categoria, se aplicável).`
+    );
 
-    let filteredItems = allItemsSnapshot.docs.map((doc) => ({
+    if (allItemsSnapshot.empty) {
+      console.log(
+        "  -> A base de dados não retornou itens. A enviar resposta vazia."
+      );
+      return res.status(200).send({
+        items: [],
+        totalPages: 0,
+        currentPage: 1,
+      });
+    }
+
+    let itemsFromDB = allItemsSnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     }));
 
+    let filteredItems = itemsFromDB;
     if (search) {
       const searchLower = search.toLowerCase();
+      const countBefore = filteredItems.length;
       filteredItems = filteredItems.filter(
         (item) =>
           item.title.toLowerCase().includes(searchLower) ||
           item.description.toLowerCase().includes(searchLower)
       );
+      console.log(
+        `  -> A pesquisa em memória filtrou de ${countBefore} para ${filteredItems.length} item(ns).`
+      );
     }
+
+    // Ordena por data DEPOIS de filtrar, mas ANTES de paginar
+    filteredItems.sort(
+      (a, b) => b.createdAt.toMillis() - a.createdAt.toMillis()
+    );
 
     const totalItems = filteredItems.length;
     const totalPages = Math.ceil(totalItems / itemsPerPage);
@@ -81,22 +117,27 @@ const getAllItems = async (req, res) => {
       startIndex + itemsPerPage
     );
 
-    // Ordena os itens da página atual por data
-    paginatedItems.sort(
-      (a, b) => b.createdAt.toMillis() - a.createdAt.toMillis()
+    console.log(
+      `  -> A paginar: a enviar ${paginatedItems.length} de um total de ${totalItems} itens para a página ${page}.`
     );
 
-    res.status(200).send({
+    const responseData = {
       items: paginatedItems,
       totalPages: totalPages,
       currentPage: Number(page),
-    });
+    };
+
+    console.log("  -> Resposta enviada com sucesso.");
+    res.status(200).send(responseData);
   } catch (error) {
-    console.error("Erro ao listar todos os itens:", error);
+    console.error("--- ERRO GRAVE EM getAllItems ---:", error);
     res.status(500).send({ error: "Ocorreu um erro no servidor." });
   }
 };
 
+/**
+ * Obtém os itens pertencentes ao utilizador autenticado.
+ */
 const getMyItems = async (req, res) => {
   try {
     const { uid } = req.user;
@@ -104,31 +145,39 @@ const getMyItems = async (req, res) => {
       .collection("items")
       .where("userId", "==", uid)
       .get();
-    const items = [];
-    itemsSnapshot.forEach((doc) => {
-      items.push({ id: doc.id, ...doc.data() });
-    });
-    // Ordena por data antes de enviar
+
+    const items = itemsSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
     items.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+
     res.status(200).send(items);
   } catch (error) {
-    console.error("Erro ao listar meus itens:", error);
+    console.error("Erro ao listar os meus itens:", error);
     res.status(500).send({ error: "Ocorreu um erro no servidor." });
   }
 };
 
+/**
+ * Apaga um item, verificando a permissão do utilizador.
+ */
 const deleteItem = async (req, res) => {
   try {
     const { uid } = req.user;
     const { itemId } = req.params;
     const itemRef = db.collection("items").doc(itemId);
     const doc = await itemRef.get();
-    if (!doc.exists)
+
+    if (!doc.exists) {
       return res.status(404).send({ error: "Item não encontrado." });
-    if (doc.data().userId !== uid)
+    }
+    if (doc.data().userId !== uid) {
       return res
         .status(403)
-        .send({ error: "Você não tem permissão para apagar este item." });
+        .send({ error: "Não tem permissão para apagar este item." });
+    }
     await itemRef.delete();
     res.status(200).send({ message: "Item apagado com sucesso." });
   } catch (error) {
@@ -137,59 +186,56 @@ const deleteItem = async (req, res) => {
   }
 };
 
+/**
+ * Atualiza o estado de um item (ex: disponível -> vendido).
+ */
 const updateItemStatus = async (req, res) => {
   try {
     const { uid } = req.user;
     const { itemId } = req.params;
-    const { status: newStatus } = req.body;
-    if (!newStatus)
-      return res.status(400).send({ error: "O novo status é obrigatório." });
+    const { status } = req.body;
+
+    if (!status) {
+      return res.status(400).send({ error: "O novo estado é obrigatório." });
+    }
+
     const itemRef = db.collection("items").doc(itemId);
     const doc = await itemRef.get();
-    if (!doc.exists)
+
+    if (!doc.exists) {
       return res.status(404).send({ error: "Item não encontrado." });
-    const currentItemData = doc.data();
-    if (currentItemData.userId !== uid)
+    }
+    if (doc.data().userId !== uid) {
       return res
         .status(403)
-        .send({ error: "Você não tem permissão para alterar este item." });
-    const currentQuantity = currentItemData.quantity || 1;
-    let updatedData;
-    if (newStatus === "vendido" && currentQuantity > 1) {
-      updatedData = { quantity: currentQuantity - 1 };
-      await itemRef.update(updatedData);
-      res
-        .status(200)
-        .send({
-          message: "Quantidade do item diminuída em 1.",
-          item: { ...currentItemData, ...updatedData },
-        });
-    } else {
-      updatedData = { status: newStatus };
-      await itemRef.update(updatedData);
-      res
-        .status(200)
-        .send({
-          message: `Status do item atualizado para ${newStatus}.`,
-          item: { ...currentItemData, ...updatedData },
-        });
+        .send({ error: "Não tem permissão para alterar este item." });
     }
+
+    await itemRef.update({ status });
+    res
+      .status(200)
+      .send({ message: `Estado do item atualizado para ${status}.` });
   } catch (error) {
-    console.error("Erro ao atualizar status do item:", error);
+    console.error("Erro ao atualizar o estado do item:", error);
     res.status(500).send({ error: "Ocorreu um erro no servidor." });
   }
 };
 
+/**
+ * Obtém um único item pelo seu ID.
+ */
 const getItemById = async (req, res) => {
   try {
     const { itemId } = req.params;
     const itemRef = db.collection("items").doc(itemId);
     const doc = await itemRef.get();
-    if (!doc.exists)
+
+    if (!doc.exists) {
       return res.status(404).send({ error: "Item não encontrado." });
+    }
     res.status(200).send({ id: doc.id, ...doc.data() });
   } catch (error) {
-    console.error("Erro ao buscar item por ID:", error);
+    console.error("Erro ao obter item por ID:", error);
     res.status(500).send({ error: "Ocorreu um erro no servidor." });
   }
 };

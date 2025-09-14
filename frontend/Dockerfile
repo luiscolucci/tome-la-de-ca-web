@@ -1,27 +1,38 @@
-# Etapa 1: Construir a aplicação React
-FROM node:20-alpine AS build
+# ---- Estágio 1: Build (Construção) ----
+# Usa uma imagem oficial do Node.js como base.
+# 'alpine' é uma versão leve, ótima para builds.
+FROM node:20-alpine AS builder
+
+# Define o diretório de trabalho dentro do contêiner
 WORKDIR /app
-COPY package*.json ./
+
+# Copia os arquivos de definição de pacotes
+COPY package.json package-lock.json ./
+
+# Instala as dependências do projeto
 RUN npm install
+
+# Copia todo o resto do código-fonte do projeto
 COPY . .
-ARG VITE_API_URL
-ENV VITE_API_URL=${VITE_API_URL}
+
+# Executa o comando de build para gerar os arquivos estáticos na pasta /dist
 RUN npm run build
 
-# Etapa 2: Servir a aplicação com Nginx
+# ---- Estágio 2: Production (Produção) ----
+# Usa uma imagem oficial e leve do Nginx
 FROM nginx:stable-alpine
-RUN apk add --no-cache gettext dos2unix
 
-# Cache buster - 30/08/2025 # <--- ADICIONE ESTA LINHA DE COMENTÁRIO
+# Copia o arquivo de configuração customizado do Nginx para dentro do contêiner
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# <<< CORRIGIDO: O caminho foi ajustado para corresponder ao script entrypoint.sh
-COPY nginx.conf /etc/nginx/conf.d/default.conf.template
+# Remove a página padrão do Nginx
+RUN rm -rf /usr/share/nginx/html/*
 
-COPY --from=build /app/dist /usr/share/nginx/html
-COPY entrypoint.sh /docker-entrypoint.sh
+# Copia os arquivos estáticos gerados no estágio de 'build' para a pasta do Nginx
+COPY --from=builder /app/dist /usr/share/nginx/html
 
-RUN dos2unix /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
+# Expõe a porta 80, que é a porta padrão do Nginx
+EXPOSE 80
 
-EXPOSE 8080
-ENTRYPOINT ["/docker-entrypoint.sh"]
+# Comando para iniciar o Nginx quando o contêiner for executado
+CMD ["nginx", "-g", "daemon off;"]

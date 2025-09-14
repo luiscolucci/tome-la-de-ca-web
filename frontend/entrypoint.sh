@@ -3,6 +3,8 @@
 # 'set -e' faz com que o script pare imediatamente se algum comando falhar.
 set -e
 
+sed -i "s|__VITE_API_URL__|${VITE_API_URL}|g" /usr/share/nginx/html/config.js
+
 # --- MENSAGENS DE DEBUG ---
 # Imprime mensagens no log para sabermos que o script começou e qual porta ele recebeu.
 echo "Iniciando o entrypoint.sh..."

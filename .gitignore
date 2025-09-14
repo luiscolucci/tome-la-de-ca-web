@@ -1,3 +1,6 @@
 *-firebase-adminsdk-*.json
 .env
 .env.production
+tome-la-de-ca-firebase-admin-key.json
+env.yaml
+.env.production

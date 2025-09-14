@@ -1,8 +1,20 @@
-# Ignora a pasta de dependências, pois ela será instalada dentro do contentor
+# Arquivos de log
+logs
+*.log
+npm-debug.log
+
+# Dependências locais que não devem ser copiadas
 node_modules
 
-# Ignora o ficheiro .env local, pois as variáveis de ambiente serão configuradas na nuvem
+# Arquivos de ambiente e segredos (NUNCA coloque no contêiner)
 .env
+env.yaml
+config/tome-la-de-ca-firebase-admin-key-*.json
 
-# Ficheiros de log do npm
-npm-debug.log
+# Metadados do Git
+.git
+.gitignore
+
+# Arquivos do Docker
+Dockerfile
+.dockerignore

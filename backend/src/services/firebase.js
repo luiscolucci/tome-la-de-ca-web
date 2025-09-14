@@ -1,25 +1,39 @@
 const admin = require("firebase-admin");
-const path = require("path");
+const path = require("path"); // Importa o módulo 'path' do Node.js
+require("dotenv").config();
 
-// VERIFICA SE ESTAMOS NO AMBIENTE DE PRODUÇÃO (CLOUD RUN)
-if (process.env.NODE_ENV === "production") {
-  // Na nuvem, o SDK do Firebase encontra as credenciais automaticamente.
-  // Nenhuma configuração extra é necessária.
-  admin.initializeApp();
-} else {
-  // No nosso ambiente local (desenvolvimento), carregamos a chave a partir do ficheiro .env.
+try {
+  // *** LINHA DE DIAGNÓSTICO ***
+  // Vamos imprimir o caminho completo que o Node.js está tentando usar para a chave
   const serviceAccountPath = path.join(
-    process.cwd(),
-    process.env.FIREBASE_SERVICE_ACCOUNT_KEY_PATH
+    __dirname,
+    "../config/tome-la-de-ca-firebase-admin-key.json"
   );
-  const serviceAccount = require(serviceAccountPath);
+
+  console.log("🔑 Tentando carregar a chave de:", serviceAccountPath);
+  //path.resolve(process.env.GOOGLE_APPLICATION_CREDENTIALS)
+  //);
+
   admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
+    credential: admin.credential.cert(serviceAccountPath),
   });
+
+  console.log("✅ Conexão com o Firebase estabelecida com sucesso!");
+} catch (error) {
+  console.error("❌ Erro ao inicializar o Firebase Admin:", error.message);
+  process.exit(1);
 }
 
-// Exporta os serviços de Autenticação e do Banco de Dados para serem usados noutras partes do backend
-const auth = admin.auth();
+// ... resto do arquivo
+// Obtém as instâncias dos serviços que vamos usar
 const db = admin.firestore();
+const auth = admin.auth();
+const storage = admin.storage().bucket("tome-la-de-ca.appspot.com");
 
-module.exports = { auth, db };
+// Exporta as instâncias para serem usadas em outros lugares do app
+module.exports = {
+  db,
+  auth,
+  storage,
+  admin,
+};
